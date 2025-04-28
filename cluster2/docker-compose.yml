@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   frr2:
-    image: frrouting/frr:v8.5.2
+    image: frrouting/frr:latest
     container_name: frr2
     network_mode: "host"
     privileged: true
