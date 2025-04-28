@@ -81,6 +81,9 @@ COPY --from=builder /usr/lib/libfrr.so /usr/lib/libfrr.so
 # Copy libyang shared libraries (clean)
 COPY --from=builder /usr/lib/libyang.so* /usr/lib/
 
+# Copy FRR mgmt libraries (new mgmtd libraries)
+COPY --from=builder /usr/lib/libmgmt*.so* /usr/lib/
+
 # Copy example daemons file
 COPY --from=builder /usr/src/frr/tools/etc/frr/daemons /etc/frr/daemons
 
