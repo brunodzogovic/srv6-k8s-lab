@@ -8,8 +8,7 @@ services:
     privileged: true
     user: "0:0"
     volumes:
-      - ./routers/frr2.conf:/etc/frr/frr.conf
-      - /etc/iproute2:/etc/iproute2      # Optional
+      - ./routers/frr2.conf:/etc/frr/frr.conf 
       - ./routers/daemons:/etc/frr/daemons
     environment:
       - FRR_ENABLE=bgpd
