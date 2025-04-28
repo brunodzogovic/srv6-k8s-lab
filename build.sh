@@ -37,13 +37,26 @@ done
 
 echo ""
 
-# --- Step 3: Build the Docker image (ONLY version tag) ---
+# --- Step 3: Update docker-compose.yml files for both clusters ---
+for cluster in cluster1 cluster2; do
+    COMPOSE_PATH="${cluster}/docker-compose.yml"
+    if [ -f "$COMPOSE_PATH" ]; then
+        echo "[INFO] Updating Docker image version in docker-compose.yml for ${cluster}..."
+        sed -i "s|brunodzogovic/frr:[^ ]*|brunodzogovic/frr:${FRR_VERSION}|g" "$COMPOSE_PATH"
+    else
+        echo "[WARNING] No docker-compose.yml found for ${cluster}, skipping."
+    fi
+done
+
+echo ""
+
+# --- Step 4: Build the Docker image (ONLY version tag) ---
 echo "[INFO] Building Docker image with tag brunodzogovic/frr:${FRR_VERSION} ..."
 docker build --network=host -t brunodzogovic/frr:${FRR_VERSION} -f Dockerfile .
 
 echo ""
 
-# --- Step 4: Prune dangling images (optional but recommended) ---
+# --- Step 5: Prune dangling images ---
 echo "[INFO] Cleaning up dangling Docker images..."
 docker image prune --force
 
