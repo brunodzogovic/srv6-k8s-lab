@@ -1,0 +1,28 @@
+# FRR integrated vtysh enabled
+vtysh_enable=yes
+
+# Correct PID directory (avoid permission errors)
+pidfile="/var/run/frr/${daemon}.pid"
+
+# Enable core FRR daemons
+zebra=yes
+bgpd=yes
+staticd=yes
+watchfrr=yes
+
+# Disable all other daemons (optional, but good practice)
+ospfd=no
+ospf6d=no
+ripd=no
+ripngd=no
+isisd=no
+babeld=no
+pimd=no
+nhrpd=no
+eigrpd=no
+pbrd=no
+ldpd=no
+bfdd=no
+fabricd=no
+sharpd=no
+vrrpd=no
