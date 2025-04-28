@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   frr1:
-    image: brunodzogovic/frr:latest
+    image: brunodzogovic/frr:10.3
     container_name: frr1
     network_mode: "host"
     privileged: true
