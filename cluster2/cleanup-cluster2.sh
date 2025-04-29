@@ -15,9 +15,5 @@ else
   echo "ℹ️ Cluster '$CLUSTER_NAME' does not exist. Nothing to do."
 fi
 
-# Optionally clean Helm releases (if you want to reset Cilium manually too)
-echo "Cleaning Helm releases..."
-helm uninstall cilium --namespace kube-system || true
-
 echo "Cleanup completed ✅"
 
