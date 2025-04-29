@@ -3,7 +3,7 @@
 set -e
 
 CLUSTER_NAME="cluster2"
-KIND_CONFIG="kind-cluster2.yaml"
+KIND_CONFIG="kind-config/kind-cluster2.yaml"
 POD_SUBNET="2001:db8:2::/64"
 SERVICE_SUBNET="2001:db8:2:fee::/112"
 FRR_PEER_IP="192.168.2.3"
