@@ -10,6 +10,19 @@ sysctl -w net.ipv6.conf.all.seg6_enabled=1
 sysctl -w net.ipv6.conf.default.seg6_enabled=1
 sysctl -w net.ipv6.conf.all.seg6_require_hmac=0
 
+# Check if 'kind' is installed
+echo
+echo "Checking if KinD is installed..."
+if ! command -v kind &> /dev/null; then
+    echo "KinD not found! Installing KinD..."
+    curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-linux-amd64
+    chmod +x ./kind
+    mv ./kind /usr/local/bin/kind
+    echo "KinD installed successfully ✅"
+else
+    echo "KinD already installed ✅"
+fi
+
 echo
 echo "Choose your cluster:"
 echo "1) Cluster 1"
