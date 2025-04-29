@@ -61,28 +61,13 @@ echo "✅ Cilium installed."
 echo "⏳ Waiting for Cilium pods to become ready..."
 kubectl -n kube-system rollout status daemonset/cilium
 
-# Apply BGP Peering Policy
-echo "📡 Applying BGP peering policy..."
+# After Cilium install + pods rollout
 
-cat > bgp-peering-policy.yaml <<EOF
-apiVersion: cilium.io/v2alpha1
-kind: CiliumBGPPeeringPolicy
-metadata:
-  name: cluster2-peering
-spec:
-  nodeSelector:
-    matchLabels:
-      kubernetes.io/os: linux
-  virtualRouters:
-  - localASN: ${LOCAL_ASN}
-    exportPodCIDR: true
-    neighbors:
-    - peerAddress: "${FRR_PEER_IP}/32"
-      peerASN: ${PEER_ASN}
-EOF
+echo "📡 Applying BGP Cluster Config..."
 
-kubectl apply -f bgp-peering-policy.yaml
-echo "✅ BGP Peering Policy applied."
+kubectl apply -f ./cilium/cilium-bgp-clusterconfig.yaml
+
+echo "✅ BGP Cluster Config applied."
 
 echo "🎉 Cluster2 with KinD + Cilium + BGP is fully ready."
 
