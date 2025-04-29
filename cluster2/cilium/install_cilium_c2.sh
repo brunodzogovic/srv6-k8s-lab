@@ -3,6 +3,7 @@
 # Install Cilium with Cluster-Pool IPAM
 helm install cilium cilium/cilium --version 1.15.2 \
   --namespace kube-system --create-namespace \
+  --set installCRDs=true \
   --set ipam.mode=cluster-pool \
   --set cluster.name=cluster2 \
   --set cluster.id=2 \
