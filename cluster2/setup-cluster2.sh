@@ -36,9 +36,26 @@ EOF
 kind create cluster --name $CLUSTER_NAME --config $KIND_CONFIG
 echo "✅ KinD cluster '$CLUSTER_NAME' created."
 
-echo "🚀 Installing Cilium from: ./cilium/install_cilium_c2.sh ..."
-bash ./cilium/install_cilium_c2.sh
-echo "✅ Cilium installed via script."
+# --- 🎯 NEW: Ask how to install Cilium ---
+echo ""
+echo "Choose Cilium installation mode:"
+echo "1) Minimal (no eBPF, uses kube-proxy)"
+echo "2) Full eBPF + XDP acceleration + kube-proxy replacement"
+
+read -rp "Select option (1 or 2): " CILIUM_MODE
+
+if [[ "$CILIUM_MODE" == "1" ]]; then
+  echo "🚀 Installing Cilium (minimal mode) from ./cilium/install_cilium_c2.sh ..."
+  bash ./cilium/install_cilium_c2.sh
+elif [[ "$CILIUM_MODE" == "2" ]]; then
+  echo "🚀 Installing Cilium (full eBPF + XDP) from ./cilium/install_cilium_c2_ebpf.sh ..."
+  bash ./cilium/install_cilium_c2_ebpf.sh
+else
+  echo "❌ Invalid selection. Exiting."
+  exit 1
+fi
+
+echo "✅ Cilium installed."
 
 # Wait for all pods to be ready
 echo "⏳ Waiting for Cilium pods to become ready..."
