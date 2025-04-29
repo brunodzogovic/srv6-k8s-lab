@@ -33,6 +33,17 @@ else
     echo "Helm already installed ✅"
 fi
 
+# Check if 'kubectl' is installed
+if ! command -v kubectl &> /dev/null; then
+    echo "kubectl not found! Installing kubectl..."
+    curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x ./kubectl
+    mv ./kubectl /usr/local/bin/kubectl
+    echo "kubectl installed successfully ✅"
+else
+    echo "kubectl already installed ✅"
+fi
+
 echo
 echo "Choose your cluster:"
 echo "1) Cluster 1"
