@@ -6,6 +6,7 @@ services:
     container_name: frr1
     network_mode: "host"
     privileged: true
+    user: "0:0"
     volumes:
       - ./routers/frr1.conf:/etc/frr/frr.conf
       - ./routers/daemons:/etc/frr/daemons
