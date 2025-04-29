@@ -10,9 +10,10 @@ sysctl -w net.ipv6.conf.all.seg6_enabled=1
 sysctl -w net.ipv6.conf.default.seg6_enabled=1
 sysctl -w net.ipv6.conf.all.seg6_require_hmac=0
 
-# Check if 'kind' is installed
 echo
-echo "Checking if KinD is installed..."
+echo "Checking and installing dependencies..."
+
+# Check if 'kind' is installed
 if ! command -v kind &> /dev/null; then
     echo "KinD not found! Installing KinD..."
     curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-linux-amd64
@@ -21,6 +22,15 @@ if ! command -v kind &> /dev/null; then
     echo "KinD installed successfully ✅"
 else
     echo "KinD already installed ✅"
+fi
+
+# Check if 'helm' is installed
+if ! command -v helm &> /dev/null; then
+    echo "Helm not found! Installing Helm..."
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    echo "Helm installed successfully ✅"
+else
+    echo "Helm already installed ✅"
 fi
 
 echo
