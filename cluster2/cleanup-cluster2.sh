@@ -3,33 +3,25 @@
 set -e
 
 CLUSTER_NAME="cluster2"
-KIND_CONFIG="kind-config/kind-cluster2.yaml"
-BGP_POLICY_FILE="bgp-peering-policy.yaml"
+KIND_CONFIG_FILE="./kind-config/kind-cluster2.yaml"
 
-echo "🧹 Starting cleanup for $CLUSTER_NAME..."
+echo "Cleaning up KinD cluster: $CLUSTER_NAME..."
 
-# Delete Kubernetes cluster
-if kind get clusters | grep -q "^$CLUSTER_NAME$"; then
-    echo "Deleting KinD cluster: $CLUSTER_NAME..."
-    kind delete cluster --name $CLUSTER_NAME
-    echo "✅ KinD cluster deleted."
-else
-    echo "⚠️ No KinD cluster named '$CLUSTER_NAME' found. Skipping deletion."
-fi
+# Delete the kind cluster
+kind delete cluster --name "$CLUSTER_NAME"
 
-# Remove generated Kind config file if exists
-if [ -f "$KIND_CONFIG" ]; then
-    echo "Removing Kind config file: $KIND_CONFIG..."
-    rm -f "$KIND_CONFIG"
-    echo "✅ Kind config file removed."
-fi
+echo "KinD cluster $CLUSTER_NAME deleted ✅"
 
-# Remove generated BGP peering policy file if exists
-if [ -f "$BGP_POLICY_FILE" ]; then
-    echo "Removing BGP peering policy file: $BGP_POLICY_FILE..."
-    rm -f "$BGP_POLICY_FILE"
-    echo "✅ BGP peering policy file removed."
-fi
+# Optionally clean Helm releases (if you want to reset Cilium manually too)
+echo "Cleaning Helm releases..."
+helm uninstall cilium --namespace kube-system || true
 
-echo "🎉 Cleanup complete for $CLUSTER_NAME."
+# Clean up Kubernetes leftovers (if any)
+echo "Cleaning up Kubernetes configs..."
+kubectl delete -f bgp-peering-policy.yaml --ignore-not-found=true || true
+
+echo "Cleanup completed ✅"
+
+# ⚡️ Important: DO NOT remove kind config file!
+echo "Preserved $KIND_CONFIG_FILE for future deployments 🚀"
 

@@ -4,25 +4,22 @@ set -e
 
 echo "📦 Installing Cilium into cluster2..."
 
-# Add Helm repo if not added
+# Add the Cilium Helm repo if not already
 helm repo add cilium https://helm.cilium.io/ || true
 helm repo update
 
+# Install Cilium
 helm install cilium cilium/cilium --version 1.15.2 \
   --namespace kube-system --create-namespace \
-  --set cluster.name=cluster2 \
-  --set cluster.id=2 \
+  --set ipam.mode=kubernetes \
+  --set bgpControlPlane.enabled=true \
   --set ipv6.enabled=true \
   --set ipv4.enabled=false \
   --set tunnel=disabled \
   --set autoDirectNodeRoutes=true \
-  --set kubeProxyReplacement=partial \
-  --set nodePort.enabled=true \
-  --set hostServices.enabled=false \
-  --set bgpControlPlane.enabled=true \
-  --set ipam.mode=kubernetes \
-  --set k8sServiceHost="127.0.0.1" \
-  --set k8sServicePort=6443
+  --set ipv6NativeRoutingCIDR="2001:db8:2::/64" \
+  --set k8sServiceHost="kubernetes.default.svc" \
+  --set k8sServicePort=443
 
-echo "✅ Cilium installed for cluster2 with BGP and IPv6"
+echo "✅ Cilium installed successfully."
 
