@@ -33,6 +33,20 @@ else
     echo "Helm already installed ✅"
 fi
 
+# Check if cilium CLI is installed
+if ! command -v cilium &> /dev/null
+then
+    echo "Cilium CLI not found. Installing..."
+    CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+    curl -L --fail --retry 5 --retry-connrefused --connect-timeout 5 \
+      "https://github.com/cilium/cilium-cli/releases/download/${CLI_VERSION}/cilium-linux-amd64.tar.gz" \
+      | tar xzvf - -C /usr/local/bin
+    chmod +x /usr/local/bin/cilium
+    echo "Cilium CLI installed ✅"
+else
+    echo "Cilium CLI is already installed ✅"
+fi
+
 # Check if 'kubectl' is installed
 if ! command -v kubectl &> /dev/null; then
     echo "kubectl not found! Installing kubectl..."
