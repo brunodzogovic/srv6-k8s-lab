@@ -42,7 +42,9 @@ RUN ./configure \
     --localstatedir=/var/run/frr \
     --enable-user=frr \
     --enable-multipath=64 \
-    --enable-vtysh
+    --enable-vtysh \
+    --enable-segment-routing \
+    --enable-segment-routing-srv6
 
 # Build and install
 RUN make -j$(nproc)
