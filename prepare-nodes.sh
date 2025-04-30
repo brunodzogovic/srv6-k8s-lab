@@ -103,6 +103,27 @@ else
     exit 1
 fi
 
+        echo
+        echo "Would you like to update IP addresses and BGP settings in the config? (y/n)"
+        read -rp "> " update_ip_choice
+
+        if [[ "$update_ip_choice" == "y" ]]; then
+            read -rp "Enter this node's IPv6 address (e.g., 2001:db8:2::1): " local_ipv6
+            read -rp "Enter the BGP peer's IPv6 address (e.g., 2001:db8:1::1): " peer_ipv6
+            read -rp "Enter this node's router-id (IPv4, e.g., 192.168.2.4): " local_router_id
+            read -rp "Enter the BGP peer's router-id (IPv4, e.g., 192.168.2.3): " peer_router_id
+
+            # Replace relevant lines in the config
+            sed -i "s|ipv6 address .*| ipv6 address ${local_ipv6}/64|" "$CLUSTER2_CONF"
+            sed -i "s|bgp router-id .*| bgp router-id ${local_router_id}|" "$CLUSTER2_CONF"
+            sed -i "s|neighbor .* remote-as .*| neighbor ${peer_router_id} remote-as 65001|" "$CLUSTER2_CONF"
+            sed -i "s|neighbor .* activate| neighbor ${peer_router_id} activate|" "$CLUSTER2_CONF"
+
+            echo "✅ Updated IPv6 and BGP configuration."
+        else
+            echo "Skipping IP update."
+        fi
+
 echo
 echo "Node preparation complete ✅"
 
