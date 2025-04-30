@@ -58,6 +58,8 @@ echo "⚙️  Creating Cilium install script at $CILIUM_INSTALL_SCRIPT ..."
 mkdir -p "$(dirname "$CILIUM_INSTALL_SCRIPT")"
 cat > "$CILIUM_INSTALL_SCRIPT" <<EOF
 #!/bin/bash
+helm repo add cilium https://helm.cilium.io/ || true
+helm repo update
 helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --namespace kube-system --create-namespace \
   --set installCRDs=true \
