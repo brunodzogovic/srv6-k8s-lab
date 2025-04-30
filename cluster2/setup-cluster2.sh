@@ -39,9 +39,9 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   disableDefaultCNI: true
-  podSubnet: "$POD_SUBNET"
-  serviceSubnet: "$SERVICE_SUBNET"
-  ipFamily: ipv6
+  podSubnet: "10.244.0.0/16,2001:db8:2::/64"
+  serviceSubnet: "10.96.0.0/12,2001:db8:2:fee::/112"
+  ipFamily: dual
 nodes:
   - role: control-plane
   - role: worker
@@ -63,7 +63,7 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set installCRDs=true \
   --set ipam.mode=cluster-pool \
   --set cluster.name=cluster2 \
-  --set cluster.id=$LOCAL_ASN \
+  --set cluster.id=$CLUSTER_ID \
   --set bgpControlPlane.enabled=true \
   --set ipv6.enabled=true
 EOF

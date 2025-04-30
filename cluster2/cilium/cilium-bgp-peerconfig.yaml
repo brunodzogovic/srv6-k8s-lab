@@ -12,7 +12,7 @@ spec:
     enabled: true
     restartTimeSeconds: 15
   families:
-    - afi: ipv4
+    - afi: ipv6
       safi: unicast
       advertisements:
         matchLabels:
