@@ -101,10 +101,10 @@ read -p "Enter your choice (1 or 2): " cluster_choice
 device_hostname=$(hostname)
 
 echo
-read -p "Enter local IPv6 address (e.g., 2001:db8:1::1/64): " LOCAL_IPV6
-read -p "Enter local IPv4 address (e.g., 192.168.1.4): " LOCAL_IPV4
-read -p "Enter peer IPv4 address (e.g., 192.168.1.3): " PEER_IPV4
-read -p "Enter advertised IPv6 network (e.g., 2001:db8:1::/64): " ADVERTISED_IPV6
+read -p "Enter local IPv6 address (e.g., 2001:db8:2::1/64): " LOCAL_IPV6
+read -p "Enter local IPv4 address (e.g., 192.168.2.4): " LOCAL_IPV4
+read -p "Enter peer IPv4 address (e.g., 192.168.2.3): " PEER_IPV4
+read -p "Enter advertised IPv6 network (e.g., 2001:db8:2::/64): " ADVERTISED_IPV6
 
 echo "You entered:"
 echo "  Local IPv6: $LOCAL_IPV6"
