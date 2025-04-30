@@ -100,11 +100,52 @@ read -p "Enter your choice (1 or 2): " cluster_choice
 # Get the current hostname
 device_hostname=$(hostname)
 
+echo
+read -p "Enter local IPv6 address (e.g., 2001:db8:1::1/64): " LOCAL_IPV6
+read -p "Enter local IPv4 address (e.g., 192.168.1.4): " LOCAL_IPV4
+read -p "Enter peer IPv4 address (e.g., 192.168.1.3): " PEER_IPV4
+read -p "Enter advertised IPv6 network (e.g., 2001:db8:1::/64): " ADVERTISED_IPV6
+
+echo "You entered:"
+echo "  Local IPv6: $LOCAL_IPV6"
+echo "  Local IPv4 (router ID): $LOCAL_IPV4"
+echo "  Peer IPv4: $PEER_IPV4"
+echo "  Advertised IPv6 Network: $ADVERTISED_IPV6"
+
+read -p "Are these correct? (y/n): " CONFIRM
+if [[ "$CONFIRM" != "y" ]]; then
+    echo "❌ Aborting configuration."
+    exit 1
+fi
+
+CONF_FILE=""
+if [[ "$cluster_choice" == "1" ]]; then
+    CONF_FILE="./cluster1/routers/frr1.conf"
+elif [[ "$cluster_choice" == "2" ]]; then
+    CONF_FILE="./cluster2/routers/frr2.conf"
+fi
+
+if [[ -f "$CONF_FILE" ]]; then
+    echo "Updating IPs inside $CONF_FILE..."
+
+    sed -i "s|^\s*ipv6 address .*| ipv6 address ${LOCAL_IPV6}|" "$CONF_FILE"
+    sed -i "s|^\s*bgp router-id .*| bgp router-id ${LOCAL_IPV4}|" "$CONF_FILE"
+    sed -i "s|^\s*neighbor .* remote-as| neighbor ${PEER_IPV4} remote-as|" "$CONF_FILE"
+    sed -i "s|^\s*neighbor .* activate| neighbor ${PEER_IPV4} activate|" "$CONF_FILE"
+    sed -i "s|^\s*network .*|  network ${ADVERTISED_IPV6}|" "$CONF_FILE"
+
+    echo "✅ FRR configuration updated with new IPs."
+else
+    echo "❌ ERROR: Could not find config file: $CONF_FILE"
+    exit 1
+fi
+
 # Apply modifications
 if [[ "$cluster_choice" == "1" ]]; then
     echo
     echo "You chose Cluster 1."
     CLUSTER1_CONF="./cluster1/routers/frr1.conf"
+    COMPOSE_FILE="./cluster1/docker-compose.yml"
 
     echo "Adjusting hostname inside ${CLUSTER1_CONF} to '${device_hostname}'..."
 
@@ -116,10 +157,14 @@ if [[ "$cluster_choice" == "1" ]]; then
         exit 1
     fi
 
+    echo "Starting FRR using Docker Compose..."
+    docker compose -f "$COMPOSE_FILE" up -d
+
 elif [[ "$cluster_choice" == "2" ]]; then
     echo
     echo "You chose Cluster 2."
     CLUSTER2_CONF="./cluster2/routers/frr2.conf"
+    COMPOSE_FILE="./cluster2/docker-compose.yml"
 
     echo "Adjusting hostname inside ${CLUSTER2_CONF} to '${device_hostname}'..."
 
@@ -131,32 +176,13 @@ elif [[ "$cluster_choice" == "2" ]]; then
         exit 1
     fi
 
+    echo "Starting FRR using Docker Compose..."
+    docker-compose -f "$COMPOSE_FILE" up -d
+
 else
     echo "Invalid choice. Exiting."
     exit 1
 fi
 
-        echo
-        echo "Would you like to update IP addresses and BGP settings in the config? (y/n)"
-        read -rp "> " update_ip_choice
-
-        if [[ "$update_ip_choice" == "y" ]]; then
-            read -rp "Enter this node's IPv6 address (e.g., 2001:db8:2::1): " local_ipv6
-            read -rp "Enter the BGP peer's IPv6 address (e.g., 2001:db8:1::1): " peer_ipv6
-            read -rp "Enter this node's router-id (IPv4, e.g., 192.168.2.4): " local_router_id
-            read -rp "Enter the BGP peer's router-id (IPv4, e.g., 192.168.2.3): " peer_router_id
-
-            # Replace relevant lines in the config
-            sed -i "s|ipv6 address .*| ipv6 address ${local_ipv6}/64|" "$CLUSTER2_CONF"
-            sed -i "s|bgp router-id .*| bgp router-id ${local_router_id}|" "$CLUSTER2_CONF"
-            sed -i "s|neighbor .* remote-as .*| neighbor ${peer_router_id} remote-as 65001|" "$CLUSTER2_CONF"
-            sed -i "s|neighbor .* activate| neighbor ${peer_router_id} activate|" "$CLUSTER2_CONF"
-
-            echo "✅ Updated IPv6 and BGP configuration."
-        else
-            echo "Skipping IP update."
-        fi
-
 echo
 echo "Node preparation complete ✅"
-
