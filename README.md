@@ -114,7 +114,7 @@ cilium connectivity test
 
 ## 📘 Documentation References
 - Cilium: https://docs.cilium.io
-- SRv6 Linux Kernel: https://lwn.net/Articles/760231/
+- SRv6 Linux Kernel: https://segment-routing.org/
 - BGP + Cilium: https://docs.cilium.io/en/stable/network/bgp/
 
 ---
