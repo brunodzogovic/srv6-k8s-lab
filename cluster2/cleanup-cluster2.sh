@@ -6,37 +6,47 @@ CLUSTER_NAME="cluster2"
 
 # Color helpers
 green() { echo -e "\033[32m$1\033[0m"; }
-red() { echo -e "\033[31m$1\033[0m"; }
+red()   { echo -e "\033[31m$1\033[0m"; }
 
-echo "\nStarting cluster cleanup..."
+echo -e "\n🧼 Starting cleanup for KinD cluster: $CLUSTER_NAME\n"
 
-# Check if KinD cluster exists
+# Step 1: Clean up Cilium BEFORE deleting cluster
+echo "🔍 Cleaning up Cilium resources..."
+
+if helm list -n kube-system | grep -q "cilium"; then
+  echo "   Uninstalling Cilium Helm release..."
+  helm uninstall cilium -n kube-system || true
+  green "✅ Cilium Helm release removed."
+else
+  red "❌ No Cilium Helm release found."
+fi
+
+if kubectl get ciliumbgpclusterconfigs.cilium.io cluster2-bgp-config &>/dev/null; then
+  echo "   Deleting CiliumBGPClusterConfig..."
+  kubectl delete ciliumbgpclusterconfigs.cilium.io cluster2-bgp-config
+  green "✅ Deleted BGP ClusterConfig."
+else
+  red "❌ No CiliumBGPClusterConfig found."
+fi
+
+if kubectl get ciliumbgppeerconfigs.cilium.io cilium-peer &>/dev/null; then
+  echo "   Deleting CiliumBGPPeerConfig..."
+  kubectl delete ciliumbgppeerconfigs.cilium.io cilium-peer
+  green "✅ Deleted BGPPeerConfig."
+else
+  red "❌ No CiliumBGPPeerConfig found."
+fi
+
+# Step 2: Delete KinD cluster
+echo -e "\n🗑️  Deleting KinD cluster '$CLUSTER_NAME'..."
 if kind get clusters | grep -q "^$CLUSTER_NAME$"; then
-  echo "⚠️  Deleting KinD cluster '$CLUSTER_NAME'..."
   kind delete cluster --name "$CLUSTER_NAME"
   green "✅ KinD cluster '$CLUSTER_NAME' deleted."
 else
-  red "❌ KinD cluster '$CLUSTER_NAME' not found. Skipping KinD cleanup."
+  red "❌ No KinD cluster named '$CLUSTER_NAME' was found."
 fi
 
-# Delete BGP config if exists (optional but clean)
-echo "\nCleaning up Cilium BGP configs if any exist..."
-if kubectl get ciliumbgpclusterconfigs.cilium.io cluster2-bgp-config &>/dev/null; then
-  kubectl delete ciliumbgpclusterconfigs.cilium.io cluster2-bgp-config
-  green "✅ Deleted Cilium BGP ClusterConfig."
-else
-  red "❌ No Cilium BGP ClusterConfig found."
-fi
-
-# Delete leftover cilium install if any (optional)
-echo "\nCleaning up Cilium installation if any..."
-if helm list -n kube-system | grep -q "cilium"; then
-  helm uninstall cilium -n kube-system || true
-  green "✅ Cilium helm release removed."
-else
-  red "❌ No Cilium helm release found."
-fi
-
-# Final reminder
-echo "\n\U0001F389 Cleanup finished!\n"
-echo "Note: Generated KinD config and BGP YAML files were preserved as per policy."
+# Final message
+echo -e "\n🎉 Cleanup complete."
+green "🔒 Docker Compose (FRR) was NOT touched."
+echo "📝 Any generated Kind configs and BGP YAMLs are preserved."
