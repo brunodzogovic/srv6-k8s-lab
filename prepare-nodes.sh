@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo "Preparing node for deployment..."
+source ./cluster2/cluster.env
 echo
 
 # Enable IPv6 forwarding and Segment Routing

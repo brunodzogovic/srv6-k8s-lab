@@ -2,44 +2,45 @@
 
 set -e
 
-# Resolve directory this script lives in (e.g. ./cluster2)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 CLUSTER_NAME="cluster2"
-KIND_CONFIG="${SCRIPT_DIR}/kind-config/kind-cluster2.yaml"
-CILIUM_DIR="${SCRIPT_DIR}/cilium"
-CILIUM_INSTALL_SCRIPT="${CILIUM_DIR}/install_cilium_c2.sh"
-POD_SUBNET="2001:db8:2::/64"
-SERVICE_SUBNET="2001:db8:2:fee::/112"
+KIND_CONFIG="cluster2/kind-config/kind-cluster2.yaml"
+CILIUM_INSTALL_SCRIPT="cluster2/cilium/install_cilium_c2.sh"
+BGP_CONFIG_FILE="cluster2/cilium/cilium-bgp-clusterconfig.yaml"
+PEER_CONFIG_FILE="cluster2/cilium/cilium-bgp-peerconfig.yaml"
 
-# Get latest Cilium version dynamically
+# Load environment variables
+if [[ -f "cluster2/cluster.env" ]]; then
+  source cluster2/cluster.env
+else
+  echo "❌ Missing cluster2/cluster.env file. Aborting."
+  exit 1
+fi
+
+# Fetch latest stable Cilium version
 CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/refs/heads/main/stable.txt)
 echo "📦 Using Cilium version: $CILIUM_VERSION"
 
-# Check if cluster already exists
+# Ask user if existing cluster should be deleted
 if kind get clusters | grep -q "^$CLUSTER_NAME$"; then
-  echo "⚠️  Cluster '$CLUSTER_NAME' already exists."
-  read -rp "❓ Do you want to delete and recreate it? (y/N): " confirm_delete
-  if [[ "$confirm_delete" =~ ^[Yy]$ ]]; then
-    echo "🧨 Deleting existing cluster '$CLUSTER_NAME'..."
-    kind delete cluster --name "$CLUSTER_NAME"
-    echo "✅ Old cluster '$CLUSTER_NAME' deleted."
-  else
-    echo "🚫 Aborting cluster recreation. Exiting."
+  read -p "⚠️  Cluster '$CLUSTER_NAME' already exists. Delete it and recreate? (y/n): " CONFIRM
+  if [[ "$CONFIRM" != "y" ]]; then
+    echo "❌ Aborting setup."
     exit 0
   fi
+  echo "   Deleting existing cluster..."
+  kind delete cluster --name "$CLUSTER_NAME"
 fi
 
-# Generate KinD config in cluster2/kind-config/
-echo "📄 Generating KinD config at $KIND_CONFIG ..."
+# Generate KinD config
+echo "📄 Generating KinD config at $KIND_CONFIG..."
 mkdir -p "$(dirname "$KIND_CONFIG")"
 cat > "$KIND_CONFIG" <<EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   disableDefaultCNI: true
-  podSubnet: "${POD_SUBNET}"
-  serviceSubnet: "${SERVICE_SUBNET}"
+  podSubnet: "$POD_SUBNET"
+  serviceSubnet: "$SERVICE_SUBNET"
   ipFamily: ipv6
 nodes:
   - role: control-plane
@@ -47,42 +48,57 @@ nodes:
   - role: worker
 EOF
 
-# Create cluster
+# Create the cluster
 echo "🚀 Creating KinD cluster '$CLUSTER_NAME'..."
 kind create cluster --name "$CLUSTER_NAME" --config "$KIND_CONFIG"
 echo "✅ KinD cluster '$CLUSTER_NAME' created."
 
-# Generate Cilium install script in cluster2/cilium/
-echo "⚙️  Generating Cilium install script at $CILIUM_INSTALL_SCRIPT ..."
-mkdir -p "$CILIUM_DIR"
+# Generate and run install script for Cilium
+echo "⚙️  Creating Cilium install script at $CILIUM_INSTALL_SCRIPT ..."
+mkdir -p "$(dirname "$CILIUM_INSTALL_SCRIPT")"
 cat > "$CILIUM_INSTALL_SCRIPT" <<EOF
 #!/bin/bash
-
-# Install Cilium with Cluster-Pool IPAM
-helm install cilium cilium/cilium --version "$CILIUM_VERSION" \\
-  --namespace kube-system --create-namespace \\
-  --set installCRDs=true \\
-  --set ipam.mode=cluster-pool \\
-  --set cluster.name=cluster2 \\
-  --set cluster.id=2 \\
-  --set bgpControlPlane.enabled=true \\
+helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
+  --namespace kube-system --create-namespace \
+  --set installCRDs=true \
+  --set ipam.mode=cluster-pool \
+  --set cluster.name=cluster2 \
+  --set cluster.id=$LOCAL_ASN \
+  --set bgpControlPlane.enabled=true \
   --set ipv6.enabled=true
 EOF
 chmod +x "$CILIUM_INSTALL_SCRIPT"
 
-# Run it
-echo "🚀 Installing Cilium using $CILIUM_INSTALL_SCRIPT ..."
+# Install Cilium
 bash "$CILIUM_INSTALL_SCRIPT"
 echo "✅ Cilium installed."
 
-# Wait for DaemonSet
-echo "⏳ Waiting for Cilium pods to become ready..."
+# Wait for pods
 kubectl -n kube-system rollout status daemonset/cilium
 
-# Generate BGP Peer Config
-BGP_PEER_FILE="${CILIUM_DIR}/cilium-bgp-peerconfig.yaml"
-echo "📄 Creating Cilium BGP Peer Config..."
-cat > $BGP_PEER_FILE <<EOF
+# Generate BGP cluster config
+cat > "$BGP_CONFIG_FILE" <<EOF
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPClusterConfig
+metadata:
+  name: cluster2-bgp-config
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/os: linux
+  bgpInstances:
+  - name: instance-${LOCAL_ASN}
+    localASN: ${LOCAL_ASN}
+    peers:
+    - name: peer-${PEER_ASN}
+      peerASN: ${PEER_ASN}
+      peerAddress: ${PEER_IPV6}
+      peerConfigRef:
+        name: cilium-peer
+EOF
+
+# Generate peer config
+cat > "$PEER_CONFIG_FILE" <<EOF
 apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPPeerConfig
 metadata:
@@ -97,40 +113,15 @@ spec:
     enabled: true
     restartTimeSeconds: 15
   families:
-    - afi: ipv4
+    - afi: ipv6
       safi: unicast
       advertisements:
         matchLabels:
           advertise: "bgp"
 EOF
 
-# Generate Cilium BGP cluster config
-BGP_CONFIG_FILE="${CILIUM_DIR}/cilium-bgp-clusterconfig.yaml"
-echo "📡 Applying Cilium BGP Cluster Config..."
-cat > "$BGP_CONFIG_FILE" <<EOF
-apiVersion: cilium.io/v2alpha1
-kind: CiliumBGPClusterConfig
-metadata:
-  name: cilium-bgp
-spec:
-  nodeSelector:
-    matchLabels:
-      kubernetes.io/os: linux
-  bgpInstances:
-    - name: "cluster2-instance"
-      localASN: 65002
-      peers:
-        - name: "cluster1-peer"
-          peerASN: 65001
-          peerAddress: 192.168.2.3
-          peerConfigRef:
-            name: cilium-peer
-EOF
-
-kubectl apply -f "$BGP_PEER_FILE"
-echo "✅ BGP Peer Config applied."
-
+# Apply configs
+kubectl apply -f "$PEER_CONFIG_FILE"
 kubectl apply -f "$BGP_CONFIG_FILE"
-echo "✅ BGP Cluster Config applied."
 
-echo "🎉 Cluster2 with KinD + Cilium $CILIUM_VERSION + BGP is fully ready."
+echo "🎉 Cluster2 with Cilium $CILIUM_VERSION + BGP is fully ready."
