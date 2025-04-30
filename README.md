@@ -137,6 +137,4 @@ Cluster config files will be retained between runs for consistency.
 
 ## 🙌 Acknowledgments
 
-Built with ❤️ by SRv6 & Kubernetes networking enthusiasts.
-
-Feel free to fork, improve, or open issues. PRs are welcome!
+Built by Bruno Dzogovic.
