@@ -79,6 +79,31 @@ echo "✅ Cilium installed."
 echo "⏳ Waiting for Cilium pods to become ready..."
 kubectl -n kube-system rollout status daemonset/cilium
 
+# Generate BGP Peer Config
+BGP_PEER_FILE="${CILIUM_DIR}/cilium-bgp-peerconfig.yaml"
+echo "📄 Creating Cilium BGP Peer Config..."
+cat > $BGP_PEER_FILE <<EOF
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPPeerConfig
+metadata:
+  name: cilium-peer
+spec:
+  timers:
+    holdTimeSeconds: 9
+    keepAliveTimeSeconds: 3
+  authSecretRef: bgp-auth-secret
+  ebgpMultihop: 4
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 15
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: "bgp"
+EOF
+
 # Generate Cilium BGP cluster config
 BGP_CONFIG_FILE="${CILIUM_DIR}/cilium-bgp-clusterconfig.yaml"
 echo "📡 Applying Cilium BGP Cluster Config..."
@@ -101,6 +126,9 @@ spec:
           peerConfigRef:
             name: cilium-peer
 EOF
+
+kubectl apply -f "$BGP_PEER_FILE"
+echo "✅ BGP Peer Config applied."
 
 kubectl apply -f "$BGP_CONFIG_FILE"
 echo "✅ BGP Cluster Config applied."

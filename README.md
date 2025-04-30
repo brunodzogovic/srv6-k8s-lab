@@ -1,140 +1,123 @@
-# 🚀 SRv6 Kubernetes Lab: FRR, Cilium & KinD Integration
+# 🧠 SRv6-Enabled Kubernetes Lab with Cilium and BGP
 
-Welcome to the **SRv6-K8s-Lab**, an end-to-end environment for experimenting with cutting-edge IPv6 Segment Routing (SRv6), Border Gateway Protocol (BGP), and Cilium-powered Kubernetes networking — all built atop lightweight [KinD](https://kind.sigs.k8s.io/) clusters.
+This lab sets up a dual-cluster Kubernetes environment with SRv6 (Segment Routing over IPv6), BGP-based routing using FRR (Free Range Routing), and Cilium as the CNI. 
 
----
-
-## 🌐 Overview
-
-This lab brings together:
-
-- ✅ **FRRouting (FRR)** – for advanced BGP and SRv6 routing.
-- ✅ **Cilium** – for container networking, with modes for:
-  - Minimal CNI (no eBPF)
-  - Full eBPF/XDP acceleration with kube-proxy replacement
-- ✅ **Kubernetes (KinD)** – container-based local clusters.
-- ✅ Benchmarking tools (`iperf3`, `qperf`) for performance testing.
-- ✅ **IPv6** + **SRv6** + **BGP Peering** – end-to-end.
-
----
-
-## 📁 Project Structure
+## 📦 Project Structure
 
 ```
-srv6-k8s-lab/
-├── cluster1/
-│   ├── cilium/
-│   ├── kind-config/
-│   ├── routers/
-│   └── benchmarking/
-├── cluster2/
-│   ├── cilium/
-│   ├── kind-config/
-│   ├── routers/
-│   └── benchmarking/
-├── build/                      # Dockerfile & FRR image build
-├── prepare-nodes.sh           # Node preparation script
-├── README.md
+./srv6-k8s-lab
+├── build/                        # Docker image build tools for FRR
+├── cluster1/                     # Cluster 1 configuration
+│   ├── cilium/                   # Cilium install and configs
+│   ├── kind-config/             # KinD config
+│   ├── benchmarking/            # Network test manifests
+│   ├── routers/                 # FRR daemon and config
+│   └── setup-cluster1.sh        # Cluster1 setup script
+├── cluster2/                     # Cluster 2 configuration
+│   ├── cilium/                   # Cilium install and configs
+│   ├── kind-config/             # KinD config
+│   ├── benchmarking/            # Network test manifests
+│   ├── routers/                 # FRR daemon and config
+│   └── setup-cluster2.sh        # Cluster2 setup script
+├── prepare-nodes.sh             # Installs dependencies and prepares the node
+├── initialize-cluster.sh        # Interactive launcher for cluster1 or cluster2
+├── cleanup-cluster1.sh          # Clean cluster1 environment
+├── cleanup-cluster2.sh          # Clean cluster2 environment
+└── README.md                    # This file
 ```
 
----
+## ✅ Prerequisites
+- Linux system with root access
+- Bash shell
 
-## ⚙️ Requirements
-
-- Docker
-- A Linux-based environment (Debian/Ubuntu recommended)
-- Basic networking knowledge
-
-⚠️ You **do not** need to pre-install `kubectl`, `kind`, `helm`, or `cilium`. These will be installed automatically.
-
----
-
-## 🛠️ Step 1: Prepare the Node
-
-Run this on each VM:
+## ⚙️ Node Preparation
+Run this once per VM to prepare the environment:
 
 ```bash
-sudo bash prepare-nodes.sh
+sudo ./prepare-nodes.sh
 ```
+This will:
+- Enable IPv6 + SRv6
+- Install Docker + Docker Compose
+- Install KinD
+- Install Helm
+- Install `kubectl`
+- Install `cilium` CLI
+- Patch FRR config (`frr1.conf` or `frr2.conf`) with the current hostname and peer IPs
+- Launch FRR container using Docker Compose
 
-- Enables SRv6 kernel support via `sysctl`
-- Installs:
-  - KinD
-  - Helm
-  - kubectl
-  - Cilium CLI
-- Prompts:
-  - Choose cluster ID (1 or 2)
-  - Edit hostname and IPs in FRR config interactively
-
----
-
-## 🚀 Step 2: Launch the Cluster
+## 🚀 Cluster Deployment
+Use the top-level interactive launcher to initialize either cluster:
 
 ```bash
-cd cluster2
-bash setup-cluster2.sh
+./initialize-cluster.sh
 ```
 
-You will be prompted to choose between:
+You’ll be asked to:
+- Choose cluster (1 or 2)
+- Optionally delete an existing cluster
+- Choose Cilium mode (minimal or full eBPF + XDP)
 
-1. Minimal Cilium (kube-proxy, no eBPF)
-2. Full eBPF + XDP + kube-proxy replacement
+Each setup script:
+- Creates a new KinD cluster with IPv6-only networking
+- Fetches latest Cilium version
+- Installs Cilium with the chosen config
+- Waits for Cilium to be ready
+- Generates and applies:
+  - `CiliumBGPClusterConfig`
+  - `CiliumBGPPeerConfig`
 
-The script:
+## 🔧 Cilium Config Modes
+You’ll be prompted to choose one:
 
-- Creates a KinD cluster with IPv6
-- Installs Cilium via Helm
-- Waits for CRDs to be ready
-- Applies BGP configuration
+### 1️⃣ Minimal
+- Uses `ipam.mode=cluster-pool`
+- BGP control plane enabled
+- eBPF and kube-proxy are **not** replaced
 
-Repeat for `cluster1` as needed.
+### 2️⃣ Full (eBPF + XDP)
+- Enables eBPF datapath
+- Replaces kube-proxy
+- Enables XDP acceleration (if supported)
 
----
+## 🔍 Benchmarking Tools
+Both clusters include:
+- `iperf3` client/server
+- `qperf` daemonset
+- `scale_test.sh` to stress-test the cluster
 
-## 🧪 Step 3: Benchmark & Validate
-
-From inside the cluster directory:
-
+Deploy benchmarking:
 ```bash
-kubectl apply -f benchmarking/iperf3-server.yaml
-kubectl apply -f benchmarking/iperf3-client-pod.yaml
+kubectl apply -f ./cluster1/benchmarking/
+# or
+kubectl apply -f ./cluster2/benchmarking/
 ```
 
-Other useful commands:
-
+## 🧼 Cleanup
+Each cluster has a dedicated cleanup script:
 ```bash
-vtysh -c "show bgp ipv6 unicast summary"    # FRR BGP status
-cilium status                               # Cilium agent status
-cilium connectivity test                    # End-to-end connectivity check
+./cleanup-cluster1.sh
+./cleanup-cluster2.sh
 ```
+> These preserve all generated config files (`kind-config/*.yaml`, `cilium/*.yaml`).
 
----
-
-## 🧹 Cleanup
-
-To delete the KinD cluster:
-
+## 🛠 Troubleshooting
+- If `kubectl rollout status` hangs, inspect pod logs:
 ```bash
-cd cluster2
-bash cleanup.sh
+kubectl -n kube-system logs -l k8s-app=cilium
+```
+- To test cluster state:
+```bash
+cilium status
+cilium connectivity test
 ```
 
-Cluster config files will be retained between runs for consistency.
+## 📘 Documentation References
+- Cilium: https://docs.cilium.io
+- SRv6 Linux Kernel: https://lwn.net/Articles/760231/
+- BGP + Cilium: https://docs.cilium.io/en/stable/network/bgp/
 
 ---
 
-## 🚧 Roadmap
+Enjoy programmable networking in Kubernetes with SRv6 and Cilium! 🎉
 
-- 🔄 ClusterMesh federation
-- ⚖️ BGP Multipath + ECMP
-- 📊 Performance benchmarking:
-  - kube-proxy vs eBPF/XDP
-- 🧠 Advanced SRv6 policies
-- ☁️ Ingress + L4/L7 routing w/ SRv6 paths
-
----
-
-## 🙌 Acknowledgments
-
-Built by Bruno Dzogovic.
