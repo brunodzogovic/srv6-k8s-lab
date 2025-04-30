@@ -39,8 +39,8 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   disableDefaultCNI: true
-  podSubnet: "10.244.0.0/16,2001:db8:2::/64"
-  serviceSubnet: "10.96.0.0/12,2001:db8:2:fee::/112"
+  podSubnet: "${POD_SUBNET_V4},${POD_SUBNET_V6}"
+  serviceSubnet: "${SERVICE_SUBNET_V4},${SERVICE_SUBNET_V6}"
   ipFamily: dual
 nodes:
   - role: control-plane
