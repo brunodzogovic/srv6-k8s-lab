@@ -6,15 +6,15 @@ This lab sets up a dual-cluster Kubernetes environment with SRv6 (Segment Routin
 
 ```
 ./srv6-k8s-lab
-├── build/                        # Docker image build tools for FRR
-├── cluster1/                     # Cluster 1 configuration
-│   ├── cilium/                   # Cilium install and configs
+├── build/                       # Docker image build tools for FRR
+├── cluster1/                    # Cluster 1 configuration
+│   ├── cilium/                  # Cilium install and configs
 │   ├── kind-config/             # KinD config
 │   ├── benchmarking/            # Network test manifests
 │   ├── routers/                 # FRR daemon and config
 │   └── setup-cluster1.sh        # Cluster1 setup script
-├── cluster2/                     # Cluster 2 configuration
-│   ├── cilium/                   # Cilium install and configs
+├── cluster2/                    # Cluster 2 configuration
+│   ├── cilium/                  # Cilium install and configs
 │   ├── kind-config/             # KinD config
 │   ├── benchmarking/            # Network test manifests
 │   ├── routers/                 # FRR daemon and config
