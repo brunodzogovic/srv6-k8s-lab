@@ -1,5 +1,3 @@
-version: "3.7"
-
 services:
   frr1:
     image: brunodzogovic/frr:10.3
