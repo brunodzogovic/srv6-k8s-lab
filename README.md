@@ -21,8 +21,7 @@ This lab sets up a dual-cluster Kubernetes environment with SRv6 (Segment Routin
 │   └── setup-cluster2.sh        # Cluster2 setup script
 ├── prepare-nodes.sh             # Installs dependencies and prepares the node
 ├── initialize-cluster.sh        # Interactive launcher for cluster1 or cluster2
-├── cleanup-cluster1.sh          # Clean cluster1 environment
-├── cleanup-cluster2.sh          # Clean cluster2 environment
+├── cleanup-cluster.sh           # Cleanup of running clusters (but not FRR routers)
 └── README.md                    # This file
 ```
 

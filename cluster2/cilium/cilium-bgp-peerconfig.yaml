@@ -12,8 +12,13 @@ spec:
     enabled: true
     restartTimeSeconds: 15
   families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: bgp
     - afi: ipv6
       safi: unicast
       advertisements:
         matchLabels:
-          advertise: "bgp"
+          advertise: bgp

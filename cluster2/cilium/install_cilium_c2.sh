@@ -1,23 +1,4 @@
 #!/bin/bash
-source "$(dirname "$0")/../cluster.env"
-
 helm repo add cilium https://helm.cilium.io/ || true
 helm repo update
-helm install cilium cilium/cilium \
-  --namespace kube-system --create-namespace \
-  --version "$CILIUM_VERSION" \
-  --set installCRDs=true \
-  --set ipam.mode=cluster-pool \
-  --set routingMode=native \
-  --set autoDirectNodeRoutes=true \
-  --set ipv6.enabled=true \
-  --set ipv6NativeRoutingCIDR=$POD_SUBNET_V6 \
-  --set clusterPoolIPv6PodCIDR=$POD_SUBNET_V6 \
-  --set clusterPoolIPv6MaskSize=64 \
-  --set ipv4.enabled=true \
-  --set ipv4NativeRoutingCIDR=$POD_SUBNET_V4 \
-  --set clusterPoolIPv4PodCIDR=$POD_SUBNET_V4 \
-  --set clusterPoolIPv4MaskSize=16 \
-  --set cluster.name=$CLUSTER_NAME \
-  --set cluster.id=$CLUSTER_ID \
-  --set bgpControlPlane.enabled=true
+helm install cilium cilium/cilium --version "v1.17.3"   --namespace kube-system --create-namespace   --set installCRDs=true   --set ipam.mode=cluster-pool   --set cluster.name=cluster2   --set cluster.id=2   --set bgpControlPlane.enabled=true   --set ipv4.enabled=true   --set ipv6.enabled=true   --set routingMode=native   --set ipv4NativeRoutingCIDR=10.244.0.0/16   --set ipv6NativeRoutingCIDR=2001:db8:2::/64   --set autoDirectNodeRoutes=true   --set loadBalancer.mode=ipip   --set bpf.masquerade=false

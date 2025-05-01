@@ -1,0 +1,7 @@
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: cluster2-pool
+spec:
+  blocks:
+  - cidr: "172.23.0.0/16"

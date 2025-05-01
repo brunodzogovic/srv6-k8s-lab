@@ -7,6 +7,9 @@ KIND_CONFIG="cluster1/kind-config/kind-cluster1.yaml"
 CILIUM_INSTALL_SCRIPT="cluster1/cilium/install_cilium_c1.sh"
 BGP_CONFIG_FILE="cluster1/cilium/cilium-bgp-clusterconfig.yaml"
 PEER_CONFIG_FILE="cluster1/cilium/cilium-bgp-peerconfig.yaml"
+LB_POOL_FILE="cluster1/cilium/lb-pool.yaml"
+LB_ADVERTISE_FILE="cluster1/cilium/lb-advertisement.yaml"
+LB_SERVICE_FILE="cluster1/cilium/lb-service.yaml"
 
 # Load environment variables
 if [[ -f "cluster1/cluster.env" ]]; then
@@ -57,28 +60,26 @@ echo "✅ KinD cluster '$CLUSTER_NAME' created."
 echo "⚙️  Creating Cilium install script at $CILIUM_INSTALL_SCRIPT ..."
 mkdir -p "$(dirname "$CILIUM_INSTALL_SCRIPT")"
 cat > "$CILIUM_INSTALL_SCRIPT" <<EOF
-source "$(dirname "$0")/../cluster.env"
-
+#!/bin/bash
 helm repo add cilium https://helm.cilium.io/ || true
 helm repo update
-helm install cilium cilium/cilium \
+helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --namespace kube-system --create-namespace \
-  --version "$CILIUM_VERSION" \
   --set installCRDs=true \
   --set ipam.mode=cluster-pool \
-  --set routingMode=native \
-  --set autoDirectNodeRoutes=true \
-  --set ipv6.enabled=true \
-  --set ipv6NativeRoutingCIDR=$POD_SUBNET_V6 \
-  --set clusterPoolIPv6PodCIDR=$POD_SUBNET_V6 \
-  --set clusterPoolIPv6MaskSize=64 \
+  --set cluster.name=${CLUSTER_NAME} \
+  --set cluster.id=${CLUSTER_ID} \
+  --set bgpControlPlane.enabled=true \
   --set ipv4.enabled=true \
-  --set ipv4NativeRoutingCIDR=$POD_SUBNET_V4 \
-  --set clusterPoolIPv4PodCIDR=$POD_SUBNET_V4 \
-  --set clusterPoolIPv4MaskSize=16 \
-  --set cluster.name=$CLUSTER_NAME \
-  --set cluster.id=$CLUSTER_ID \
-  --set bgpControlPlane.enabled=true
+  --set ipv6.enabled=true \
+  --set routingMode=native \
+  --set ipv4NativeRoutingCIDR=${POD_SUBNET_V4} \
+  --set ipv6NativeRoutingCIDR=${POD_SUBNET_V6} \
+  --set autoDirectNodeRoutes=true \
+  --set loadBalancer.l7.backend=envoy \
+  --set bpf.masquerade=false \
+  --set ipam.operator.clusterPoolIPv4PodCIDRList={${POD_SUBNET_V4}} \
+  --set ipam.operator.clusterPoolIPv6PodCIDRList={${POD_SUBNET_V6}}
 EOF
 chmod +x "$CILIUM_INSTALL_SCRIPT"
 
@@ -89,12 +90,39 @@ echo "✅ Cilium installed."
 # Wait for pods
 kubectl -n kube-system rollout status daemonset/cilium
 
+# Generate LB IPAM pool definition
+cat > "$LB_POOL_FILE" <<EOF
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: ${CLUSTER_NAME}-pool
+spec:
+  blocks:
+  - cidr: "$LB_POOL"
+EOF
+
+# Generate BGP advertisement config
+cat > "$LB_ADVERTISE_FILE" <<EOF
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPAdvertisement
+metadata:
+  name: bgp-advertisements
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+  - advertisementType: Service
+    service:
+      addresses:
+        - LoadBalancerIP
+EOF
+
 # Generate BGP cluster config
 cat > "$BGP_CONFIG_FILE" <<EOF
 apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPClusterConfig
 metadata:
-  name: cluster1-bgp-config
+  name: ${CLUSTER_NAME}-bgp-config
 spec:
   nodeSelector:
     matchLabels:
@@ -126,16 +154,23 @@ spec:
     enabled: true
     restartTimeSeconds: 15
   families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: bgp
     - afi: ipv6
       safi: unicast
       advertisements:
         matchLabels:
-          advertise: "bgp"
+          advertise: bgp
 EOF
 
 # Apply configs
 kubectl apply -f "$PEER_CONFIG_FILE"
 kubectl apply -f "$BGP_CONFIG_FILE"
+kubectl apply -f "$LB_POOL_FILE"
+kubectl apply -f "$LB_ADVERTISE_FILE"
 
-echo "🎉 Cluster1 with Cilium $CILIUM_VERSION + BGP is fully ready."
+echo "🎉 $CLUSTER_NAME fully initialized with Cilium $CILIUM_VERSION, BGP, and LB IPAM ready."
 
