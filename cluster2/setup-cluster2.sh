@@ -19,6 +19,7 @@ fi
 # Fetch latest stable Cilium version
 CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/refs/heads/main/stable.txt)
 echo "📦 Using Cilium version: $CILIUM_VERSION"
+export CILIUM_VERSION
 
 # Ask user if existing cluster should be deleted
 if kind get clusters | grep -q "^$CLUSTER_NAME$"; then
@@ -56,18 +57,27 @@ echo "✅ KinD cluster '$CLUSTER_NAME' created."
 # Generate and run install script for Cilium
 echo "⚙️  Creating Cilium install script at $CILIUM_INSTALL_SCRIPT ..."
 mkdir -p "$(dirname "$CILIUM_INSTALL_SCRIPT")"
-cat > "$CILIUM_INSTALL_SCRIPT" <<EOF
+cat > "$CILIUM_INSTALL_SCRIPT" <<'EOF'
 #!/bin/bash
+source "$(dirname "$0")/../cluster.env"
+
 helm repo add cilium https://helm.cilium.io/ || true
 helm repo update
 helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --namespace kube-system --create-namespace \
   --set installCRDs=true \
   --set ipam.mode=cluster-pool \
-  --set cluster.name=cluster2 \
-  --set cluster.id=$CLUSTER_ID \
+  --set cluster.name=${CLUSTER_NAME} \
+  --set cluster.id=${CLUSTER_ID} \
   --set bgpControlPlane.enabled=true \
-  --set ipv6.enabled=true
+  --set ipv6.enabled=true \
+  --set ipv4.enabled=true \
+  --set routingMode=native \
+  --set ipv6NativeRoutingCIDR=${POD_SUBNET_V6} \
+  --set ipv4NativeRoutingCIDR=${POD_SUBNET_V4} \
+  --set enableIPv4Masquerade=true \
+  --set enableIPMasqAgent=false \
+  --set autoDirectNodeRoutes=true
 EOF
 chmod +x "$CILIUM_INSTALL_SCRIPT"
 
@@ -127,3 +137,4 @@ kubectl apply -f "$PEER_CONFIG_FILE"
 kubectl apply -f "$BGP_CONFIG_FILE"
 
 echo "🎉 Cluster2 with Cilium $CILIUM_VERSION + BGP is fully ready."
+
