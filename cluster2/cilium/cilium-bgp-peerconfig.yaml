@@ -5,7 +5,8 @@ metadata:
 spec:
   timers:
     holdTimeSeconds: 9
-    keepAliveTimeSeconds: 3 
+    keepAliveTimeSeconds: 3
+  authSecretRef: bgp-auth-secret
   ebgpMultihop: 4
   gracefulRestart:
     enabled: true
