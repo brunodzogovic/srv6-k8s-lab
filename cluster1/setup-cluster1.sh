@@ -76,10 +76,8 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set ipv4NativeRoutingCIDR=${POD_SUBNET_V4} \
   --set ipv6NativeRoutingCIDR=${POD_SUBNET_V6} \
   --set autoDirectNodeRoutes=true \
-  --set loadBalancer.l7.backend=envoy \
-  --set bpf.masquerade=false \
-  --set ipam.operator.clusterPoolIPv4PodCIDRList={${POD_SUBNET_V4}} \
-  --set ipam.operator.clusterPoolIPv6PodCIDRList={${POD_SUBNET_V6}}
+  --set loadBalancer.mode=ipip \
+  --set bpf.masquerade=false
 EOF
 chmod +x "$CILIUM_INSTALL_SCRIPT"
 
@@ -111,10 +109,10 @@ metadata:
     advertise: bgp
 spec:
   advertisements:
-  - advertisementType: Service
-    service:
-      addresses:
-        - LoadBalancerIP
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
 EOF
 
 # Generate BGP cluster config
@@ -173,4 +171,3 @@ kubectl apply -f "$LB_POOL_FILE"
 kubectl apply -f "$LB_ADVERTISE_FILE"
 
 echo "🎉 $CLUSTER_NAME fully initialized with Cilium $CILIUM_VERSION, BGP, and LB IPAM ready."
-
