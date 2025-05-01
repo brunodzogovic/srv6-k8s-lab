@@ -104,7 +104,7 @@ spec:
     peers:
     - name: peer-${PEER_ASN}
       peerASN: ${PEER_ASN}
-      peerAddress: ${PEER_IPV6}
+      peerAddress: ${PEER_IPV4}
       peerConfigRef:
         name: cilium-peer
 EOF

@@ -12,6 +12,6 @@ spec:
     peers:
     - name: peer-65001
       peerASN: 65001
-      peerAddress: 
+      peerAddress: 192.168.2.3 
       peerConfigRef:
         name: cilium-peer
