@@ -96,7 +96,8 @@ metadata:
   name: ${CLUSTER_NAME}-pool
 spec:
   blocks:
-  - cidr: "$LB_POOL"
+  - cidr: "$LB_POOL_V4"
+  - cidr: "$LB_POOL_V6"
 EOF
 
 # Generate BGP advertisement config
@@ -129,9 +130,14 @@ spec:
   - name: instance-${LOCAL_ASN}
     localASN: ${LOCAL_ASN}
     peers:
-    - name: peer-${PEER_ASN}
-      peerASN: ${PEER_ASN}
-      peerAddress: ${PEER_IPV4}
+    - name: peer-${LOCAL_ASN}
+      peerASN: ${LOCAL_ASN}
+      peerAddress: ${LOCAL_IPV4}
+      peerConfigRef:
+        name: cilium-peer
+    - name: peer-ipv6
+      peerASN: ${LOCAL_ASN}
+      peerAddress: ${LOCAL_FRR_IPV6}
       peerConfigRef:
         name: cilium-peer
 EOF

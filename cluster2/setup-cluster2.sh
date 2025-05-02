@@ -88,12 +88,12 @@ echo "✅ Cilium installed."
 # Wait for pods
 kubectl -n kube-system rollout status daemonset/cilium
 
-# Generate BGP cluster config
+# Generate BGP cluster config to point to local FRR instance
 cat > "$BGP_CONFIG_FILE" <<EOF
 apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPClusterConfig
 metadata:
-  name: cluster2-bgp-config
+  name: ${CLUSTER_NAME}-bgp-config
 spec:
   nodeSelector:
     matchLabels:
@@ -102,9 +102,14 @@ spec:
   - name: instance-${LOCAL_ASN}
     localASN: ${LOCAL_ASN}
     peers:
-    - name: peer-${PEER_ASN}
-      peerASN: ${PEER_ASN}
-      peerAddress: ${PEER_IPV4}
+    - name: peer-${LOCAL_ASN}
+      peerASN: ${LOCAL_ASN}
+      peerAddress: ${LOCAL_IPV4}
+      peerConfigRef:
+        name: cilium-peer
+    - name: peer-ipv6
+      peerASN: ${LOCAL_ASN}
+      peerAddress: ${LOCAL_FRR_IPV6}
       peerConfigRef:
         name: cilium-peer
 EOF
@@ -145,7 +150,8 @@ metadata:
   name: cluster2-pool
 spec:
   blocks:
-  - cidr: "$LB_POOL"
+  - cidr: "$LB_POOL_V4"
+  - cidr: "$LB_POOL_V6"
 EOF
 
 # Generate BGP advertisement config
