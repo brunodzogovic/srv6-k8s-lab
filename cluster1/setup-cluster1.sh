@@ -114,6 +114,7 @@ spec:
       service:
         addresses:
           - LoadBalancerIP
+    - advertisementType: PodCIDR
 EOF
 
 # Generate BGP cluster config

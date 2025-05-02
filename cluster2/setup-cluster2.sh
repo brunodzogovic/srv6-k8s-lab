@@ -168,6 +168,7 @@ spec:
       service:
         addresses:
           - LoadBalancerIP
+    - advertisementType: PodCIDR
 EOF
 
 # Generate example LB service with label
