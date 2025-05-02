@@ -147,7 +147,7 @@ cat > "$LB_POOL_FILE" <<EOF
 apiVersion: "cilium.io/v2alpha1"
 kind: CiliumLoadBalancerIPPool
 metadata:
-  name: cluster2-pool
+  name: ${CLUSTER_NAME}-pool
 spec:
   blocks:
   - cidr: "$LB_POOL_V4"
