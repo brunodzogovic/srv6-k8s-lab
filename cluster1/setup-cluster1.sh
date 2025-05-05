@@ -1,63 +1,34 @@
 #!/bin/bash
-
 set -e
 
-CLUSTER_NAME="cluster1"
-KIND_CONFIG="cluster1/kind-config/kind-cluster1.yaml"
-CILIUM_INSTALL_SCRIPT="cluster1/cilium/install_cilium_c1.sh"
-BGP_CONFIG_FILE="cluster1/cilium/cilium-bgp-clusterconfig.yaml"
-PEER_CONFIG_FILE="cluster1/cilium/cilium-bgp-peerconfig.yaml"
-LB_POOL_FILE="cluster1/cilium/lb-pool.yaml"
-LB_ADVERTISE_FILE="cluster1/cilium/lb-advertisement.yaml"
-LB_SERVICE_FILE="cluster1/cilium/lb-service.yaml"
+CLUSTER_NAME="cluster2"
+CILIUM_INSTALL_SCRIPT="cluster2/cilium/install_cilium_c2.sh"
+BGP_CONFIG_FILE="cluster2/cilium/cilium-bgp-clusterconfig.yaml"
+PEER_CONFIG_FILE="cluster2/cilium/cilium-bgp-peerconfig.yaml"
+LB_POOL_FILE="cluster2/cilium/lb-pool.yaml"
+LB_ADVERTISE_FILE="cluster2/cilium/lb-advertisement.yaml"
+LB_SERVICE_FILE="cluster2/cilium/lb-service.yaml"
 
-# Load environment variables
-if [[ -f "cluster1/cluster.env" ]]; then
+# Load env vars
+if [[ -f "cluster2/cluster.env" ]]; then
   source cluster1/cluster.env
+elif
+  source cluster.env
 else
-  echo "❌ Missing cluster1/cluster.env file. Aborting."
+  echo "❌ Missing cluster2/cluster.env. Aborting."
   exit 1
 fi
 
-# Fetch latest stable Cilium version
+echo "🚀 Installing K3s with no default CNI ..."
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --disable=traefik --disable=servicelb --disable-cloud-controller" sh -
+
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+sleep 5
+
+echo "📦 Installing Cilium via Helm..."
 CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/refs/heads/main/stable.txt)
-echo "📦 Using Cilium version: $CILIUM_VERSION"
 
-# Ask user if existing cluster should be deleted
-if kind get clusters | grep -q "^$CLUSTER_NAME$"; then
-  read -p "⚠️  Cluster '$CLUSTER_NAME' already exists. Delete it and recreate? (y/n): " CONFIRM
-  if [[ "$CONFIRM" != "y" ]]; then
-    echo "❌ Aborting setup."
-    exit 0
-  fi
-  echo "   Deleting existing cluster..."
-  kind delete cluster --name "$CLUSTER_NAME"
-fi
-
-# Generate KinD config
-echo "📄 Generating KinD config at $KIND_CONFIG..."
-mkdir -p "$(dirname "$KIND_CONFIG")"
-cat > "$KIND_CONFIG" <<EOF
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  disableDefaultCNI: true
-  podSubnet: "${POD_SUBNET_V4},${POD_SUBNET_V6}"
-  serviceSubnet: "${SERVICE_SUBNET_V4},${SERVICE_SUBNET_V6}"
-  ipFamily: dual
-nodes:
-  - role: control-plane
-  - role: worker
-  - role: worker
-EOF
-
-# Create the cluster
-echo "🚀 Creating KinD cluster '$CLUSTER_NAME'..."
-kind create cluster --name "$CLUSTER_NAME" --config "$KIND_CONFIG"
-echo "✅ KinD cluster '$CLUSTER_NAME' created."
-
-# Generate and run install script for Cilium
-echo "⚙️  Creating Cilium install script at $CILIUM_INSTALL_SCRIPT ..."
+# Prepare Cilium Helm install script
 mkdir -p "$(dirname "$CILIUM_INSTALL_SCRIPT")"
 cat > "$CILIUM_INSTALL_SCRIPT" <<EOF
 #!/bin/bash
@@ -69,9 +40,13 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set ipam.mode=cluster-pool \
   --set cluster.name=${CLUSTER_NAME} \
   --set cluster.id=${CLUSTER_ID} \
+  --set operator.replicas=1 \
+  --set ipv4.enabled=true \
+  --set ipv6.enabled=false \
+  --set ipam.operator.clusterPoolIPv4PodCIDRList="{${POD_SUBNET_V4}}" \
   --set bgpControlPlane.enabled=true \
   --set ipv4.enabled=true \
-  --set ipv6.enabled=true \
+  --set ipv6.enabled=false \
   --set routingMode=native \
   --set ipv4NativeRoutingCIDR=${POD_SUBNET_V4} \
   --set ipv6NativeRoutingCIDR=${POD_SUBNET_V6} \
@@ -79,43 +54,13 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set loadBalancer.mode=ipip \
   --set bpf.masquerade=false
 EOF
-chmod +x "$CILIUM_INSTALL_SCRIPT"
 
-# Install Cilium
+chmod +x "$CILIUM_INSTALL_SCRIPT"
 bash "$CILIUM_INSTALL_SCRIPT"
 echo "✅ Cilium installed."
 
-# Wait for pods
-kubectl -n kube-system rollout status daemonset/cilium
-
-# Generate LB IPAM pool definition
-cat > "$LB_POOL_FILE" <<EOF
-apiVersion: "cilium.io/v2alpha1"
-kind: CiliumLoadBalancerIPPool
-metadata:
-  name: ${CLUSTER_NAME}-pool
-spec:
-  blocks:
-  - cidr: "$LB_POOL_V4"
-  - cidr: "$LB_POOL_V6"
-EOF
-
-# Generate BGP advertisement config
-cat > "$LB_ADVERTISE_FILE" <<EOF
-apiVersion: cilium.io/v2alpha1
-kind: CiliumBGPAdvertisement
-metadata:
-  name: bgp-advertisements
-  labels:
-    advertise: bgp
-spec:
-  advertisements:
-    - advertisementType: Service
-      service:
-        addresses:
-          - LoadBalancerIP
-    - advertisementType: PodCIDR
-EOF
+# Wait for Cilium pods
+kubectl -n kube-system rollout status daemonset/cilium --timeout=300s
 
 # Generate BGP cluster config
 cat > "$BGP_CONFIG_FILE" <<EOF
@@ -131,19 +76,19 @@ spec:
   - name: instance-${LOCAL_ASN}
     localASN: ${LOCAL_ASN}
     peers:
-    - name: peer-${LOCAL_ASN}
+    - name: peer-v4
       peerASN: ${LOCAL_ASN}
       peerAddress: ${LOCAL_IPV4}
       peerConfigRef:
         name: cilium-peer
-    - name: peer-ipv6
+    - name: peer-v6
       peerASN: ${LOCAL_ASN}
       peerAddress: ${LOCAL_FRR_IPV6}
       peerConfigRef:
         name: cilium-peer
 EOF
 
-# Generate peer config
+# Peer config
 cat > "$PEER_CONFIG_FILE" <<EOF
 apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPPeerConfig
@@ -154,7 +99,7 @@ spec:
     holdTimeSeconds: 9
     keepAliveTimeSeconds: 3
   authSecretRef: bgp-auth-secret
-  ebgpMultihop: 4
+  ebgpMultihop: 1
   gracefulRestart:
     enabled: true
     restartTimeSeconds: 15
@@ -171,10 +116,63 @@ spec:
           advertise: bgp
 EOF
 
-# Apply configs
+# LoadBalancer pool definition
+cat > "$LB_POOL_FILE" <<EOF
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: ${CLUSTER_NAME}-pool
+spec:
+  blocks:
+  - cidr: "$LB_POOL_V4"
+  - cidr: "$LB_POOL_V6"
+EOF
+
+# Advertisement config
+cat > "$LB_ADVERTISE_FILE" <<EOF
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPAdvertisement
+metadata:
+  name: bgp-advertisements
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+EOF
+
+# Example LB service
+#cat > "$LB_SERVICE_FILE" <<EOF
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: test-lb-service
+#  labels:
+#    pool: ${CLUSTER_NAME}-pool
+#    app: test-app
+#    advertise: bgp
+#spec:
+#  selector:
+#    app: test-app
+#  ipFamilyPolicy: PreferDualStack
+#  ipFamilies:
+#    - IPv4
+#    - IPv6
+#  type: LoadBalancer
+#  ports:
+#    - name: http
+#      port: 80
+#      targetPort: 80
+#EOF
+
+# Apply everything
 kubectl apply -f "$PEER_CONFIG_FILE"
 kubectl apply -f "$BGP_CONFIG_FILE"
 kubectl apply -f "$LB_POOL_FILE"
 kubectl apply -f "$LB_ADVERTISE_FILE"
+kubectl apply -f "$LB_SERVICE_FILE"
 
-echo "🎉 $CLUSTER_NAME fully initialized with Cilium $CILIUM_VERSION, BGP, and LB IPAM ready."
+echo "🎉 Cluster2 is up with K3s + Cilium ($CILIUM_VERSION) + DualStack BGP + LB IPAM."
