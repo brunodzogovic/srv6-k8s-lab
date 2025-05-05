@@ -97,7 +97,7 @@ The script automatically detects the active cluster and removes its stack.
 
 - Deploy a test app:
   ```bash
-  kubectl apply -f nginx.yaml
+  kubectl apply -f test.yaml
   ```
 
 - View service IPs:
@@ -110,10 +110,10 @@ The script automatically detects the active cluster and removes its stack.
 - Add support for cluster mesh via clustermesh-apiserver
 - Integrate Hubble for observability
 - Automate dual-stack test validation
+- Zero-Trust security with SRv6 segmentation and BGP policy enforcement
+- 5G/6G Network Slicing Orchestration
 
 ## ✅ Maintainers
 
-This lab was designed to demonstrate advanced Cilium BGP features with SRv6, useful for 5G Core, Edge, and Service Mesh deployments.
-
-Happy experimenting!
+This lab was designed by Bruno Dzogovic to demonstrate advanced Cilium BGP features with SRv6, useful for 5G Core, Edge, and Service Mesh deployments.
 
