@@ -2,7 +2,7 @@
 set -e
 
 CLUSTER_NAME="cluster1"
-CILIUM_INSTALL_SCRIPT="cluster1/cilium/install_cilium_c2.sh"
+CILIUM_INSTALL_SCRIPT="cluster1/cilium/install_cilium_c1.sh"
 BGP_CONFIG_FILE="cluster1/cilium/cilium-bgp-clusterconfig.yaml"
 PEER_CONFIG_FILE="cluster1/cilium/cilium-bgp-peerconfig.yaml"
 LB_POOL_FILE="cluster1/cilium/lb-pool.yaml"
