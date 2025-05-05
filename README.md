@@ -30,8 +30,8 @@ This lab demonstrates a dual-stack, BGP-advertised, SRv6-capable Kubernetes setu
 ├── prepare-node.sh                # Installs dependencies, configures system, and starts FRR
 ├── cleanup-cluster.sh             # Removes K3s & Cilium from any cluster
 ├── initialize-cluster.sh          # Interactive launcher script
-README.md
-test.yaml                          # Test deployment to test the BGP SRv6 endpoints
+|-- README.md
+|-- test.yaml                          # Test deployment to test the BGP SRv6 endpoints
 ```
 
 ## 🚀 Getting Started
