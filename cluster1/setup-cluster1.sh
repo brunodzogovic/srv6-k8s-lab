@@ -12,7 +12,7 @@ LB_SERVICE_FILE="cluster2/cilium/lb-service.yaml"
 # Load env vars
 if [[ -f "cluster2/cluster.env" ]]; then
   source cluster1/cluster.env
-elif
+elif [[ -f "cluster.env" ]]; then
   source cluster.env
 else
   echo "❌ Missing cluster2/cluster.env. Aborting."
