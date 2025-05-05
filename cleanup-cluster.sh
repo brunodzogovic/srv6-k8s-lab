@@ -2,25 +2,19 @@
 
 set -e
 
-echo "🧼 Cleaning up active Kubernetes cluster (but keeping FRR routing)..."
+CLUSTER_NAME="cluster2"
 
-# Detect the active FRR container
-frr_container=$(docker ps --format '{{.Names}}' | grep -E '^frr[12]$' || true)
+# Delete the Helm release of Cilium
+echo "🗑️  Uninstalling Cilium via Helm..."
+helm uninstall cilium -n kube-system || true
 
-if [[ -z "$frr_container" ]]; then
-  echo "❌ No active FRR container found (frr1 or frr2). Cannot determine cluster context."
-  exit 1
-fi
-
-if [[ "$frr_container" == "frr1" ]]; then
-  echo "🔍 Detected FRR container: frr1 → cleaning up Cluster 1"
-  ./cluster1/cleanup-cluster1.sh
-elif [[ "$frr_container" == "frr2" ]]; then
-  echo "🔍 Detected FRR container: frr2 → cleaning up Cluster 2"
-  ./cluster2/cleanup-cluster2.sh
+# Uninstall K3s (if this was a standalone K3s node)
+if [ -f "/usr/local/bin/k3s-uninstall.sh" ]; then
+  echo "🗑️  Uninstalling K3s..."
+  /usr/local/bin/k3s-uninstall.sh
 else
-  echo "❌ Unrecognized FRR container: $frr_container"
-  exit 1
+  echo "ℹ️  K3s uninstall script not found. You may need to uninstall K3s manually."
 fi
 
-echo "✅ Cluster cleanup complete (FRR remains active)."
+echo "✅ Cleanup complete for ${CLUSTER_NAME}."
+

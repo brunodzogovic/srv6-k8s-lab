@@ -5,4 +5,4 @@ metadata:
 spec:
   blocks:
   - cidr: "172.23.0.0/16"
-  - cidr: "2001:db8:2:fee::/112" 
+  - cidr: "2001:db8:2:fee::/112"
