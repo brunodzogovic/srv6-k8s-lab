@@ -55,17 +55,6 @@ else
     echo "Docker Compose is already installed ✅"
 fi
 
-# Check if 'kind' is installed
-if ! command -v kind &> /dev/null; then
-    echo "KinD not found! Installing KinD..."
-    curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-linux-amd64
-    chmod +x ./kind
-    mv ./kind /usr/local/bin/kind
-    echo "KinD installed successfully ✅"
-else
-    echo "KinD already installed ✅"
-fi
-
 # Check if 'helm' is installed
 if ! command -v helm &> /dev/null; then
     echo "Helm not found! Installing Helm..."
@@ -87,17 +76,6 @@ then
     echo "Cilium CLI installed ✅"
 else
     echo "Cilium CLI is already installed ✅"
-fi
-
-# Check if 'kubectl' is installed
-if ! command -v kubectl &> /dev/null; then
-    echo "kubectl not found! Installing kubectl..."
-    curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    chmod +x ./kubectl
-    mv ./kubectl /usr/local/bin/kubectl
-    echo "kubectl installed successfully ✅"
-else
-    echo "kubectl already installed ✅"
 fi
 
 echo
