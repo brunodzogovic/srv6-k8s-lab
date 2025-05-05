@@ -1,21 +1,21 @@
 #!/bin/bash
 set -e
 
-CLUSTER_NAME="cluster2"
-CILIUM_INSTALL_SCRIPT="cluster2/cilium/install_cilium_c2.sh"
-BGP_CONFIG_FILE="cluster2/cilium/cilium-bgp-clusterconfig.yaml"
-PEER_CONFIG_FILE="cluster2/cilium/cilium-bgp-peerconfig.yaml"
-LB_POOL_FILE="cluster2/cilium/lb-pool.yaml"
-LB_ADVERTISE_FILE="cluster2/cilium/lb-advertisement.yaml"
-LB_SERVICE_FILE="cluster2/cilium/lb-service.yaml"
+CLUSTER_NAME="cluster1"
+CILIUM_INSTALL_SCRIPT="cluster1/cilium/install_cilium_c2.sh"
+BGP_CONFIG_FILE="cluster1/cilium/cilium-bgp-clusterconfig.yaml"
+PEER_CONFIG_FILE="cluster1/cilium/cilium-bgp-peerconfig.yaml"
+LB_POOL_FILE="cluster1/cilium/lb-pool.yaml"
+LB_ADVERTISE_FILE="cluster1/cilium/lb-advertisement.yaml"
+LB_SERVICE_FILE="cluster1/cilium/lb-service.yaml"
 
 # Load env vars
-if [[ -f "cluster2/cluster.env" ]]; then
+if [[ -f "cluster1/cluster.env" ]]; then
   source cluster1/cluster.env
 elif [[ -f "cluster.env" ]]; then
   source cluster.env
 else
-  echo "❌ Missing cluster2/cluster.env. Aborting."
+  echo "❌ Missing cluster1/cluster.env. Aborting."
   exit 1
 fi
 
