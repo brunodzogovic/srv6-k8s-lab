@@ -125,7 +125,7 @@ spec:
     holdTimeSeconds: 9
     keepAliveTimeSeconds: 3
   authSecretRef: bgp-auth-secret
-  ebgpMultihop: 4
+  ebgpMultihop: 1
   gracefulRestart:
     enabled: true
     restartTimeSeconds: 15
@@ -151,7 +151,7 @@ metadata:
 spec:
   blocks:
   - cidr: "$LB_POOL_V4"
-  - cidr: "$LB_POOL_V6"
+  - cidr: "$LB_POOL_V6" 
 EOF
 
 # Generate BGP advertisement config
@@ -168,7 +168,6 @@ spec:
       service:
         addresses:
           - LoadBalancerIP
-    - advertisementType: PodCIDR
 EOF
 
 # Generate example LB service with label
@@ -178,6 +177,7 @@ kind: Service
 metadata:
   name: test-lb-service
   labels:
+    pool: cluster2-pool
     app: test-app
     advertise: bgp
 spec:

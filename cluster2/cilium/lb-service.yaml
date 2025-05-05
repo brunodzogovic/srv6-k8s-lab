@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: test-lb-service
   labels:
+    pool: cluster2-pool
     app: test-app
     advertise: bgp
 spec:

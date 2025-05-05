@@ -7,7 +7,7 @@ spec:
     holdTimeSeconds: 9
     keepAliveTimeSeconds: 3
   authSecretRef: bgp-auth-secret
-  ebgpMultihop: 4
+  ebgpMultihop: 1
   gracefulRestart:
     enabled: true
     restartTimeSeconds: 15
