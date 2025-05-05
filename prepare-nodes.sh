@@ -129,6 +129,15 @@ echo "Adjusting hostname inside ${CONF_FILE} to '${device_hostname}'..."
 sed -i "s/^hostname .*/hostname ${device_hostname}/" "$CONF_FILE"
 echo "Updated hostname inside FRR config!"
 
+# Remove existing bgp listen range entries to avoid duplication
+sed -i '/^\s*bgp listen range .* peer-group CILIUM/d' "$CONF_FILE"
+
+# Inject new BGP listen range statements
+echo "Injecting BGP listen ranges into $CONF_FILE..."
+sed -i "/^ neighbor CILIUM peer-group/a \ bgp listen range ${LB_POOL_V4} peer-group CILIUM" "$CONF_FILE"
+sed -i "/^ neighbor CILIUM peer-group/a \ bgp listen range ${LB_POOL_V6} peer-group CILIUM" "$CONF_FILE"
+echo "✅ Updated 'bgp listen range' for IPv4 and IPv6 based on LB_POOL_V4/V6."
+
 # Start FRR via Docker Compose
 echo "Starting FRR using Docker Compose..."
 docker compose -f "$COMPOSE_FILE" up -d
