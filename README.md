@@ -30,8 +30,8 @@ This lab demonstrates a dual-stack, BGP-advertised, SRv6-capable Kubernetes setu
 ├── prepare-node.sh                # Installs dependencies, configures system, and starts FRR
 ├── cleanup-cluster.sh             # Removes K3s & Cilium from any cluster
 ├── initialize-cluster.sh          # Interactive launcher script
-|-- README.md
-|-- test.yaml                          # Test deployment to test the BGP SRv6 endpoints
+├── README.md
+├── test.yaml                      # Test deployment to test the BGP SRv6 endpoints
 ```
 
 ## 🚀 Getting Started
@@ -116,10 +116,9 @@ The script automatically detects the active cluster and removes its stack.
 - Add support for cluster mesh via clustermesh-apiserver
 - Integrate Hubble for observability
 - Automate dual-stack test validation
+- Zero-trust security with SRv6 segmentation and BGP policy enforcement
+- 5G/6G Network Slicing Orchestration
 
 ## ✅ Maintainers
 
-This lab was designed to demonstrate advanced Cilium BGP features with SRv6, useful for 5G Core, Edge, and Service Mesh deployments.
-
-Happy experimenting!
-
+This lab was designed by Bruno Dzogovic to demonstrate advanced Cilium BGP features with SRv6, useful for 5G Core, Edge, and Service Mesh deployments.
