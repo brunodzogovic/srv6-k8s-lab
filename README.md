@@ -17,15 +17,21 @@ This lab demonstrates a dual-stack, BGP-advertised, SRv6-capable Kubernetes setu
 │   ├── cluster.env                # Cluster1 environment variables
 │   ├── routers/frr1.conf          # FRR config for Cluster1
 │   └── docker-compose.yml         # Launches FRR router in Docker
+│   └── setup-cluster1.sh          # Script that starts the cluster
 ├── cluster2/
 │   ├── cluster.env
 │   ├── routers/frr2.conf
 │   └── docker-compose.yml
+│   └── setup-cluster2.sh
+├── build/
+│   ├── Dockerfile
+│   ├── build.sh                   # A script to build custom Docker image for FRR routers
+│   ├── entrypoint.sh      
 ├── prepare-node.sh                # Installs dependencies, configures system, and starts FRR
-├── setup-cluster1.sh              # Deploys K3s + Cilium + BGP for Cluster1
-├── setup-cluster2.sh              # Deploys K3s + Cilium + BGP for Cluster2
-├── cleanup.sh                     # Removes K3s & Cilium from any cluster
+├── cleanup-cluster.sh             # Removes K3s & Cilium from any cluster
 ├── initialize-cluster.sh          # Interactive launcher script
+README.md
+test.yaml                          # Test deployment to test the BGP SRv6 endpoints
 ```
 
 ## 🚀 Getting Started
@@ -97,7 +103,7 @@ The script automatically detects the active cluster and removes its stack.
 
 - Deploy a test app:
   ```bash
-  kubectl apply -f test.yaml
+  kubectl apply -f nginx.yaml
   ```
 
 - View service IPs:
@@ -110,10 +116,10 @@ The script automatically detects the active cluster and removes its stack.
 - Add support for cluster mesh via clustermesh-apiserver
 - Integrate Hubble for observability
 - Automate dual-stack test validation
-- Zero-Trust security with SRv6 segmentation and BGP policy enforcement
-- 5G/6G Network Slicing Orchestration
 
 ## ✅ Maintainers
 
-This lab was designed by Bruno Dzogovic to demonstrate advanced Cilium BGP features with SRv6, useful for 5G Core, Edge, and Service Mesh deployments.
+This lab was designed to demonstrate advanced Cilium BGP features with SRv6, useful for 5G Core, Edge, and Service Mesh deployments.
+
+Happy experimenting!
 
