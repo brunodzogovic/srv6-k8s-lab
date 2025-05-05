@@ -1,143 +1,119 @@
-🚀 SRv6 BGP Lab with K3s + Cilium + FRR
 
-This project sets up a dual-stack Kubernetes environment using K3s with Cilium CNI, BGP peering via FRR (Free Range Routing), and SRv6 support for advanced networking experimentation.
+# SRv6 Kubernetes Multi-Cluster Lab with K3s, Cilium, and FRR
 
-📦 Components
+This lab demonstrates a dual-stack, BGP-advertised, SRv6-capable Kubernetes setup using:
 
-K3s: Lightweight Kubernetes distribution
+- **K3s** as the Kubernetes distribution
+- **Cilium** as the CNI and BGP control plane
+- **FRR (Free Range Routing)** for BGP and SRv6
+- **Docker** for containerizing FRR and managing networking
+- **Helm** for managing Cilium deployment
 
-Cilium: CNI plugin with BGP Control Plane v2
+## 🧭 Project Structure
 
-FRR: Used for BGP peering and SRv6 configuration
-
-Docker: Hosts FRR containers and used to build isolated lab environments
-
-🧱 Directory Structure
-
-srv6-k8s-lab/
+```
+.
 ├── cluster1/
-│   ├── cluster.env
-│   ├── docker-compose.yml
-│   ├── routers/
-│   │   └── frr1.conf
+│   ├── cluster.env                # Cluster1 environment variables
+│   ├── routers/frr1.conf          # FRR config for Cluster1
+│   └── docker-compose.yml         # Launches FRR router in Docker
 ├── cluster2/
 │   ├── cluster.env
-│   ├── docker-compose.yml
-│   ├── routers/
-│   │   └── frr2.conf
-├── common/
-│   ├── base-images/
-│   └── helpers/
-├── initialize-cluster.sh
-├── prepare-node.sh
-├── cleanup.sh
-└── README.md
+│   ├── routers/frr2.conf
+│   └── docker-compose.yml
+├── prepare-node.sh                # Installs dependencies, configures system, and starts FRR
+├── setup-cluster1.sh              # Deploys K3s + Cilium + BGP for Cluster1
+├── setup-cluster2.sh              # Deploys K3s + Cilium + BGP for Cluster2
+├── cleanup.sh                     # Removes K3s & Cilium from any cluster
+├── initialize-cluster.sh          # Interactive launcher script
+```
 
-⚙️ Usage
+## 🚀 Getting Started
 
-1. ✅ Prepare the host
+### 1. Prepare a Node
 
-sudo ./prepare-node.sh
+This sets up sysctl, installs Docker, Helm, Cilium CLI, and launches FRR:
 
-Sets sysctl flags for IPv6 forwarding and SRv6
+```bash
+./prepare-node.sh
+```
 
-Installs Docker, Helm, and Cilium CLI if missing
+Follow the prompt to choose cluster 1 or 2. This will:
+- Modify the relevant FRR config using values from `cluster.env`
+- Replace BGP `listen range` with the correct `LB_POOL_V4`
+- Launch FRR with Docker Compose
 
-Starts the appropriate FRR container
+### 2. Deploy a Cluster (K3s + Cilium)
 
-Dynamically updates FRR config using values in cluster.env
-
-2. 🚀 Initialize a cluster
-
+```bash
 ./initialize-cluster.sh
+```
 
-Prompts you to choose cluster1 or cluster2
+You’ll be asked to choose Cluster 1 or 2. This will:
+- Install the latest stable K3s version
+- Install Cilium with BGP + LoadBalancer IPAM
+- Apply cluster-specific Cilium BGP and LB configs
 
-Uses values from cluster.env to:
+### 3. Clean Up
 
-Generate K3s config
+To remove K3s and Cilium:
 
-Install Cilium with correct flags (e.g. dual-stack, BGP)
-
-Apply IPAM pool, advertisement, and BGP CRDs
-
-3. 🧼 Cleanup
-
+```bash
 ./cleanup.sh
+```
 
-Automatically detects which cluster is running and removes:
+The script automatically detects the active cluster and removes its stack.
 
-Helm release of Cilium
+## 📡 BGP + SRv6 Configuration Highlights
 
-K3s installation
+- Each FRR container is configured with:
+  - `bgp listen range` dynamically set to `LB_POOL_V4` from env
+  - Peering with the opposite cluster’s FRR via IPv4
+  - `network` directive to advertise SRv6 `/64` prefixes
+  - `segment-routing srv6` static SID and locator blocks
 
-🔍 Configuration Details
+- Cilium advertises LoadBalancer IPs over BGP using:
+  - `CiliumBGPClusterConfig`
+  - `CiliumBGPAdvertisement`
+  - `CiliumLoadBalancerIPPool`
 
-Each cluster's cluster.env file defines:
+## 📋 Requirements
 
-Local/peer BGP settings
+- Ubuntu 20.04+ (tested)
+- Internet access (for installing Docker, Helm, K3s, etc.)
+- At least 2 nodes (VMs or physical) to represent cluster1 and cluster2
 
-IP pool for LB IPAM
+## 📎 Useful Commands
 
-Pod/Service subnets
+- Check BGP peering:
+  ```bash
+  docker exec -it frr1 vtysh -c "show bgp summary"
+  ```
 
-SRv6 locator and static SIDs
+- Check advertised routes in Cilium:
+  ```bash
+  cilium bgp routes advertised ipv6
+  ```
 
-Example snippet:
+- Deploy a test app:
+  ```bash
+  kubectl apply -f nginx.yaml
+  ```
 
-LOCAL_IPV6=2001:db8:2::1/64
-PEER_IPV4=192.168.2.3
-ADVERTISED_IPV6=2001:db8:2::/64
-LB_POOL_V4=172.23.0.0/16
-LB_POOL_V6=2001:db8:2:fee::/112
+- View service IPs:
+  ```bash
+  kubectl get svc -o wide
+  ```
 
-These are parsed automatically into:
+## 📦 Future Improvements
 
-FRR config (frr2.conf)
+- Add support for cluster mesh via clustermesh-apiserver
+- Integrate Hubble for observability
+- Automate dual-stack test validation
 
-K3s + Cilium deployment flags
+## ✅ Maintainers
 
-Cilium BGP advertisements + peer config
+This lab was designed to demonstrate advanced Cilium BGP features with SRv6, useful for 5G Core, Edge, and Service Mesh deployments.
 
-🛰️ FRR & SRv6
+Happy experimenting!
 
-FRR is launched as a Docker container (host network mode)
-
-BGP config includes dynamic peering (bgp listen range ... peer-group CILIUM)
-
-Segment Routing is enabled via:
-
-segment-routing
- srv6
-  static-sids
-   sid 2001:db8:2:1::1/128 locator cluster2_locator behavior uN
-  ...
-
-✅ Status Check
-
-cilium status
-cilium bgp peers
-cilium bgp routes available ipv6
-cilium bgp routes advertised ipv6
-
-📌 Notes
-
-Pod-to-pod routing requires correct clusterPoolIPv4PodCIDRList in Cilium config
-
-Peering works with dynamic IPs assigned from the Docker bridge (172.19.0.0/16) and maps to LB IPAM pool
-
-K3s is used exclusively (no longer using KinD)
-
-📬 Feedback / Contribution
-
-Open an issue or PR for improvements!
-
-🔗 References
-
-Cilium BGP Control Plane v2 Docs
-
-FRR BGP Guide
-
-K3s Official Site
-
- 
