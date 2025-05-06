@@ -22,7 +22,12 @@ fi
 echo "🚀 Installing K3s with no default CNI ..."
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --disable=traefik --disable=servicelb --disable-cloud-controller" sh -
 
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+# Export kubeconfig to default location for kubectl/helm/cilium
+mkdir -p ~/.kube
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+sudo chown "$(id -u):$(id -g)" ~/.kube/config
+echo "✅ Kubeconfig set at ~/.kube/config"
+
 sleep 5
 
 echo "📦 Installing Cilium via Helm..."
@@ -43,6 +48,8 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set operator.replicas=1 \
   --set ipv4.enabled=true \
   --set ipv6.enabled=false \
+  --set cleanCiliumState=true \
+  --set cleanCiliumBpfState=true \
   --set ipam.operator.clusterPoolIPv4PodCIDRList="{${POD_SUBNET_V4}}" \
   --set bgpControlPlane.enabled=true \
   --set ipv4.enabled=true \
@@ -144,35 +151,10 @@ spec:
           - LoadBalancerIP
 EOF
 
-# Example LB service
-#cat > "$LB_SERVICE_FILE" <<EOF
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: test-lb-service
-#  labels:
-#    pool: ${CLUSTER_NAME}-pool
-#    app: test-app
-#    advertise: bgp
-#spec:
-#  selector:
-#    app: test-app
-#  ipFamilyPolicy: PreferDualStack
-#  ipFamilies:
-#    - IPv4
-#    - IPv6
-#  type: LoadBalancer
-#  ports:
-#    - name: http
-#      port: 80
-#      targetPort: 80
-#EOF
-
 # Apply everything
 kubectl apply -f "$PEER_CONFIG_FILE"
 kubectl apply -f "$BGP_CONFIG_FILE"
 kubectl apply -f "$LB_POOL_FILE"
 kubectl apply -f "$LB_ADVERTISE_FILE"
-kubectl apply -f "$LB_SERVICE_FILE"
 
 echo "🎉 Cluster2 is up with K3s + Cilium ($CILIUM_VERSION) + DualStack BGP + LB IPAM."
