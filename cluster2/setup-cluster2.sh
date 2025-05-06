@@ -151,36 +151,11 @@ spec:
           - LoadBalancerIP
 EOF
 
-# Example LB service
-cat > "$LB_SERVICE_FILE" <<EOF
-apiVersion: v1
-kind: Service
-metadata:
-  name: test-lb-service
-  labels:
-    pool: ${CLUSTER_NAME}-pool
-    app: test-app
-    advertise: bgp
-spec:
-  selector:
-    app: test-app
-  ipFamilyPolicy: PreferDualStack
-  ipFamilies:
-    - IPv4
-    - IPv6
-  type: LoadBalancer
-  ports:
-    - name: http
-      port: 80
-      targetPort: 80
-EOF
-
 # Apply everything
 kubectl apply -f "$PEER_CONFIG_FILE"
 kubectl apply -f "$BGP_CONFIG_FILE"
 kubectl apply -f "$LB_POOL_FILE"
 kubectl apply -f "$LB_ADVERTISE_FILE"
-kubectl apply -f "$LB_SERVICE_FILE"
 
 echo "🎉 Cluster2 is up with K3s + Cilium ($CILIUM_VERSION) + DualStack BGP + LB IPAM."
 
