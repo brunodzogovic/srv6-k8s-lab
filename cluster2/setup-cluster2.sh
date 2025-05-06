@@ -43,6 +43,7 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set operator.replicas=1 \
   --set ipv4.enabled=true \
   --set ipv6.enabled=false \
+  --set cleanState.enabled=true \
   --set ipam.operator.clusterPoolIPv4PodCIDRList="{${POD_SUBNET_V4}}" \
   --set bgpControlPlane.enabled=true \
   --set ipv4.enabled=true \

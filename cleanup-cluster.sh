@@ -2,6 +2,14 @@
 
 set -e
 
+read -p "Do you want to proceed with cluster destruction? (y/n)" yn
+case $yn in 
+  [yY] ) echo Proceeding with cleanup...;;
+  [nN] ) echo Exiting...;
+     exit;;
+  * )  echo Invalid response!;
+       exit;;
+esac
 echo "🧹 Starting K3s-based cluster cleanup..."
 
 # Uninstall Cilium if installed
