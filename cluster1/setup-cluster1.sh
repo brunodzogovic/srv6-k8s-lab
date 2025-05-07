@@ -20,7 +20,7 @@ else
 fi
 
 echo "🚀 Installing K3s with no default CNI ..."
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip=$LOCAL_FRR_IPV6 --advertise-address=$LOCAL_FRR_IPV6 --cluster-cidr=$CLUSTER_CIDR --service-cidr=$SERVICE_SUBNET_V6 --flannel-backend=none --disable-network-policy --disable=traefik --disable=servicelb --disable-cloud-controller" sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip=$LOCAL_FRR_IPV6 --advertise-address=$LOCAL_FRR_IPV6 --cluster-cidr=$CLUSTER_CIDR_V6 --service-cidr=$SERVICE_SUBNET_V6 --flannel-backend=none --disable-network-policy --disable=traefik --disable=servicelb --disable-cloud-controller" sh -
 
 # Export kubeconfig to default location for kubectl/helm/cilium
 mkdir -p ~/.kube
