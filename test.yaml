@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dualstack-test
+  name: ipv6-test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: dualstack-test
+      app: ipv6-test
   template:
     metadata:
       labels:
-        app: dualstack-test
+        app: ipv6-test
     spec:
       containers:
         - name: web
@@ -21,18 +21,19 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: dualstack-lb
+  name: ipv6-lb
   labels:
-    app: dualstack-test
+    app: ipv6-test
     advertise: bgp
     pool: cluster2-pool
+  annotations:
+    "lbipam.cilium.io/ips": "2001:db8:2:fef::10"
 spec:
   selector:
-    app: dualstack-test
+    app: ipv6-test
   type: LoadBalancer
-  ipFamilyPolicy: PreferDualStack
+  ipFamilyPolicy: SingleStack
   ipFamilies:
-    - IPv4
     - IPv6
   ports:
     - port: 80
