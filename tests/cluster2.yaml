@@ -32,8 +32,9 @@ spec:
   selector:
     app: ipv6-test
   type: LoadBalancer
-  ipFamilyPolicy: SingleStack
+  ipFamilyPolicy: PreferDualStack
   ipFamilies:
+    - IPv4
     - IPv6
   ports:
     - port: 80
