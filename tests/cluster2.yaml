@@ -25,7 +25,7 @@ metadata:
   labels:
     app: ipv6-test
     advertise: bgp
-    pool: cluster1-pool
+    pool: cluster2-pool
   annotations:
     "lbipam.cilium.io/ips": "2001:db8:2:fef::10"
 spec:
