@@ -1,12 +1,4 @@
 #!/bin/bash
-# Install Cilium on cluster1
-helm repo add cilium https://helm.cilium.io/
-helm install cilium cilium/cilium --version 1.13.3 \
-  --namespace kube-system --create-namespace \
-  --set cluster.name=cluster1 --set cluster.id=1 :contentReference[oaicite:15]{index=15}
-  --set ipv6.enabled=true \
-  --set tunnel=disabled \
-  --set autoDirectNodeRoutes=true \
-  --set kubeProxyReplacement=partial \
-  --set nodePort.enabled=true --set hostServices.enabled=false
-
+helm repo add cilium https://helm.cilium.io/ || true
+helm repo update
+helm install cilium cilium/cilium --version "v1.17.3"   --namespace kube-system --create-namespace   --set installCRDs=true   --set ipam.mode=cluster-pool   --set cluster.name=cluster1   --set cluster.id=1   --set k8sServiceHost=2001:db8:1::1   --set k8sServicePort=6443   --set operator.replicas=1   --set cleanCiliumState=true   --set cleanCiliumBpfState=true   --set ipam.operator.clusterPoolIPv6PodCIDRList="{2001:db8:1:10::/112}"   --set bgpControlPlane.enabled=true   --set ipv4.enabled=false   --set enableIPv4Masquerade=false   --set ipv6.enabled=true   --set routingMode=native   --set ipv6NativeRoutingCIDR=2001:db8:1:10::/112   --set autoDirectNodeRoutes=true   --set loadBalancer.mode=ipip   --set bpf.masquerade=false

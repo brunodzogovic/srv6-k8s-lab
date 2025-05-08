@@ -20,7 +20,17 @@ else
 fi
 
 echo "🚀 Installing K3s with no default CNI ..."
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip=$LOCAL_FRR_IPV6 --advertise-address=$LOCAL_FRR_IPV6 --cluster-cidr=$CLUSTER_CIDR_V6 --service-cidr=$SERVICE_SUBNET_V6 --flannel-backend=none --disable-network-policy --disable=traefik --disable=servicelb --disable-cloud-controller" sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="\
+--node-ip=$LOCAL_IPV4 \
+--node-external-ip=$LOCAL_FRR_IPV6 \
+--advertise-address=$LOCAL_IPV4 \
+--cluster-cidr=$CLUSTER_CIDR_V4,$CLUSTER_CIDR_V6 \
+--service-cidr=$SERVICE_SUBNET_V4,$SERVICE_SUBNET_V6 \
+--flannel-backend=none \
+--disable-network-policy \
+--disable=traefik \
+--disable=servicelb \
+--disable-cloud-controller" sh -
 
 # Export kubeconfig to default location for kubectl/helm/cilium
 mkdir -p ~/.kube
@@ -52,6 +62,10 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set cleanCiliumBpfState=true \
   --set ipam.operator.clusterPoolIPv6PodCIDRList="{${POD_SUBNET_V6}}" \
   --set bgpControlPlane.enabled=true \
+  --set ipv4.enabled=true \
+  --set ipam.operator.clusterPoolIPv4PodCIDRList="{${POD_SUBNET_V4}}" \
+  --set service.cidr=${SERVICE_SUBNET_V4} \
+  --set ipv4NativeRoutingCIDR=${POD_SUBNET_V4} \
   --set ipv4.enabled=false \
   --set enableIPv4Masquerade=false \
   --set ipv6.enabled=true \
@@ -83,6 +97,11 @@ spec:
   - name: instance-${LOCAL_ASN}
     localASN: ${LOCAL_ASN}
     peers:
+    - name: peer-v4
+      peerASN: ${LOCAL_ASN}
+      peerAddress: ${LOCAL_FRR_IPV4}
+      peerConfigRef:
+        name: cilium-peer
     - name: peer-v6
       peerASN: ${LOCAL_ASN}
       peerAddress: ${LOCAL_FRR_IPV6}
@@ -105,6 +124,11 @@ spec:
     enabled: true
     restartTimeSeconds: 15
   families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: bgp
     - afi: ipv6
       safi: unicast
       advertisements:
@@ -120,6 +144,7 @@ metadata:
   name: ${CLUSTER_NAME}-pool
 spec:
   blocks:
+  - cidr: "$LB_POOL_V4"
   - cidr: "$LB_POOL_V6"
 EOF
 
