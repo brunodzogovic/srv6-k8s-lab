@@ -39,9 +39,6 @@ echo "✅ Kubeconfig set at ~/.kube/config"
 
 sleep 5
 
-echo "📦 Installing Cilium via Helm..."
-CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/refs/heads/main/stable.txt)
-
 # Prepare Cilium Helm install script
 mkdir -p "$(dirname "$CILIUM_INSTALL_SCRIPT")"
 cat > "$CILIUM_INSTALL_SCRIPT" <<EOF
@@ -62,17 +59,13 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set ipam.operator.clusterPoolIPv6PodCIDRList="{${POD_SUBNET_V6}}" \
   --set bgpControlPlane.enabled=true \
   --set ipv4.enabled=true \
+  --set ipv6.enabled=true \
   --set ipam.operator.clusterPoolIPv4PodCIDRList="{${POD_SUBNET_V4}}" \
   --set service.cidr=${SERVICE_SUBNET_V4} \
   --set ipv4NativeRoutingCIDR=${POD_SUBNET_V4} \
-  --set ipv4.enabled=false \
-  --set enableIPv4Masquerade=false \
-  --set ipv6.enabled=true \
   --set routingMode=native \
   --set ipv6NativeRoutingCIDR=${POD_SUBNET_V6} \
-  --set autoDirectNodeRoutes=true \
-  --set loadBalancer.mode=ipip \
-  --set bpf.masquerade=false
+  --set autoDirectNodeRoutes=true
 EOF
 
 chmod +x "$CILIUM_INSTALL_SCRIPT"
