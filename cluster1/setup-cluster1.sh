@@ -22,10 +22,9 @@ fi
 echo "🚀 Installing K3s with no default CNI ..."
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="\
 --node-ip=$LOCAL_IPV4 \
---node-external-ip=$LOCAL_FRR_IPV6 \
 --advertise-address=$LOCAL_IPV4 \
---cluster-cidr=$CLUSTER_CIDR_V4,$CLUSTER_CIDR_V6 \
---service-cidr=$SERVICE_SUBNET_V4,$SERVICE_SUBNET_V6 \
+--cluster-cidr=$CLUSTER_CIDR_V4 \
+--service-cidr=$SERVICE_SUBNET_V4 \
 --flannel-backend=none \
 --disable-network-policy \
 --disable=traefik \
@@ -55,7 +54,7 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --set ipam.mode=cluster-pool \
   --set cluster.name=${CLUSTER_NAME} \
   --set cluster.id=${CLUSTER_ID} \
-  --set k8sServiceHost=${LOCAL_FRR_IPV6} \
+  --set k8sServiceHost=${LOCAL_IPV4} \
   --set k8sServicePort=6443 \
   --set operator.replicas=1 \
   --set cleanCiliumState=true \

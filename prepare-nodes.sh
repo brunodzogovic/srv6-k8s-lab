@@ -73,6 +73,34 @@ else
 fi
 
 echo
+echo "🔢 Select Cilium version:"
+echo "1) Enter a specific version (e.g., 1.16.7)"
+echo "2) Automatically detect latest stable"
+read -p "Your choice: " cilium_version_choice
+
+if [[ "$cilium_version_choice" == "1" ]]; then
+    read -p "Enter desired Cilium version (e.g., 1.16.7): " CILIUM_VERSION
+else
+    echo "🔍 Fetching latest stable Cilium version..."
+    CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/main/stable.txt)
+    echo "✅ Using Cilium version: $CILIUM_VERSION"
+fi
+
+echo
+echo "🔢 Select k3s version:"
+echo "1) Enter a specific version (e.g., v1.31.7+k3s1)"
+echo "2) Automatically detect latest stable"
+read -p "Your choice: " k3s_version_choice
+
+if [[ "$k3s_version_choice" == "1" ]]; then
+    read -p "Enter desired k3s version (e.g., v1.31.7+k3s1): " K3S_VERSION
+else
+    echo "🔍 Fetching latest stable k3s version..."
+    K3S_VERSION=$(curl -s https://update.k3s.io/v1-release/channels/stable)
+    echo "✅ Using k3s version: $K3S_VERSION"
+fi
+
+echo
 echo "Choose your cluster:"
 echo "1) Cluster 1"
 echo "2) Cluster 2"
@@ -148,4 +176,3 @@ docker compose -f "$COMPOSE_FILE" up -d
 
 echo
 echo "Node preparation complete ✅"
-
