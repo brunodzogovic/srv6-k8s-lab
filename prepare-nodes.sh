@@ -126,6 +126,8 @@ interface eth0
  ipv6 address ${LOCAL_IPV6}
 exit
 !
+ipv6 route ${PEER_IPV6}/${PEER_MASK} eth0
+!
 router bgp ${LOCAL_ASN}
  bgp router-id ${LOCAL_IPV4}
  no bgp ebgp-requires-policy
