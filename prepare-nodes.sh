@@ -133,8 +133,11 @@ router bgp ${LOCAL_ASN}
  neighbor CILIUM remote-as ${LOCAL_ASN}
  neighbor ${PEER_IPV4} remote-as ${PEER_ASN}
  neighbor ${PEER_IPV6} remote-as ${PEER_ASN}
+ neighbor ${PEER_IPV6} update-source eth0
  bgp listen range ${LB_POOL_V4} peer-group CILIUM
  bgp listen range ${LB_POOL_V6} peer-group CILIUM
+ redistribute connected
+ redistribute static
  !
  address-family ipv4 unicast
   network ${ADVERTISED_IPV4}
