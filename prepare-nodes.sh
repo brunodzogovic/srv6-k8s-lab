@@ -129,15 +129,15 @@ exit
 ipv6 route ${PEER_IPV6}/${PEER_MASK} eth0
 !
 router bgp ${LOCAL_ASN}
- bgp router-id ${LOCAL_IPV4}
+ bgp router-id $ROUTER_ID
  no bgp ebgp-requires-policy
  neighbor CILIUM peer-group
  neighbor CILIUM remote-as ${LOCAL_ASN}
  neighbor ${PEER_IPV4} remote-as ${PEER_ASN}
  neighbor ${PEER_IPV6} remote-as ${PEER_ASN}
  neighbor ${PEER_IPV6} interface eth0
- bgp listen range ${LB_POOL_V4} peer-group CILIUM
- bgp listen range ${LB_POOL_V6} peer-group CILIUM
+ bgp listen range 2001:db8:1::/64 peer-group CILIUM
+ bgp listen range 192.168.2.0/24 peer-group CILIUM
  redistribute connected
  redistribute static
  !

@@ -21,8 +21,6 @@ fi
 
 echo "🚀 Installing K3s with no default CNI ..."
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="\
---node-ip=$LOCAL_IPV4 \
---advertise-address=$LOCAL_IPV4 \
 --cluster-cidr=$CLUSTER_CIDR_V4 \
 --service-cidr=$SERVICE_SUBNET_V4 \
 --flannel-backend=none \
@@ -49,22 +47,18 @@ helm install cilium cilium/cilium --version "$CILIUM_VERSION" \
   --namespace kube-system --create-namespace \
   --set installCRDs=true \
   --set ipam.mode=cluster-pool \
+  --set kubeProxyReplacement=true \
   --set cluster.name=${CLUSTER_NAME} \
   --set cluster.id=${CLUSTER_ID} \
-  --set k8sServiceHost=${LOCAL_IPV4} \
-  --set k8sServicePort=6443 \
   --set operator.replicas=1 \
   --set cleanCiliumState=true \
   --set cleanCiliumBpfState=true \
-  --set ipam.operator.clusterPoolIPv6PodCIDRList="{${POD_SUBNET_V6}}" \
   --set bgpControlPlane.enabled=true \
   --set ipv4.enabled=true \
-  --set ipv6.enabled=true \
   --set ipam.operator.clusterPoolIPv4PodCIDRList="{${POD_SUBNET_V4}}" \
   --set service.cidr=${SERVICE_SUBNET_V4} \
   --set ipv4NativeRoutingCIDR=${POD_SUBNET_V4} \
   --set routingMode=native \
-  --set ipv6NativeRoutingCIDR=${POD_SUBNET_V6} \
   --set autoDirectNodeRoutes=true
 EOF
 
@@ -80,23 +74,18 @@ cat > "$BGP_CONFIG_FILE" <<EOF
 apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPClusterConfig
 metadata:
-  name: ${CLUSTER_NAME}-bgp-config
+  name: $CLUSTER_NAME-bgp-config
 spec:
   nodeSelector:
     matchLabels:
       kubernetes.io/os: linux
   bgpInstances:
-  - name: instance-${LOCAL_ASN}
-    localASN: ${LOCAL_ASN}
+  - name: instance-$LOCAL_ASN
+    localASN: $LOCAL_ASN
     peers:
     - name: peer-v4
-      peerASN: ${LOCAL_ASN}
-      peerAddress: ${LOCAL_FRR_IPV4}
-      peerConfigRef:
-        name: cilium-peer
-    - name: peer-v6
-      peerASN: ${LOCAL_ASN}
-      peerAddress: ${LOCAL_FRR_IPV6}
+      peerASN: $LOCAL_ASN
+      peerAddress: $LOCAL_IPV4
       peerConfigRef:
         name: cilium-peer
 EOF
@@ -121,11 +110,6 @@ spec:
       advertisements:
         matchLabels:
           advertise: bgp
-    - afi: ipv6
-      safi: unicast
-      advertisements:
-        matchLabels:
-          advertise: bgp
 EOF
 
 # LoadBalancer pool definition
@@ -133,11 +117,10 @@ cat > "$LB_POOL_FILE" <<EOF
 apiVersion: "cilium.io/v2alpha1"
 kind: CiliumLoadBalancerIPPool
 metadata:
-  name: ${CLUSTER_NAME}-pool
+  name: $CLUSTER_NAME-pool
 spec:
   blocks:
   - cidr: "$LB_POOL_V4"
-  - cidr: "$LB_POOL_V6"
 EOF
 
 # Advertisement config

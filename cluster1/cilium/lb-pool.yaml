@@ -4,4 +4,4 @@ metadata:
   name: cluster1-pool
 spec:
   blocks:
-  - cidr: "2001:db8:1:fef::/112"
+  - cidr: "172.23.0.0/16"

@@ -10,8 +10,8 @@ spec:
   - name: instance-65001
     localASN: 65001
     peers:
-    - name: peer-v6
+    - name: peer-v4
       peerASN: 65001
-      peerAddress: 2001:db8:1::1
+      peerAddress: 192.168.2.5
       peerConfigRef:
         name: cilium-peer
