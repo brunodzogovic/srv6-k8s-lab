@@ -144,8 +144,9 @@ router bgp ${LOCAL_ASN}
  neighbor ${PEER_IPV4} remote-as ${PEER_ASN}
  neighbor ${PEER_IPV6} remote-as ${PEER_ASN}
  neighbor ${PEER_IPV6} interface eth0
- bgp listen range 2001:db8:1::/64 peer-group CILIUM
- bgp listen range 192.168.2.0/24 peer-group CILIUM
+ bgp listen range ${LOCAL_IPV6} peer-group CILIUM
+ bgp listen range ${ADVERTISED_IPV4} peer-group CILIUM
+ bgp listen range ${IPV4_NETWORK} peer-group CILIUM
  bgp listen range ${LB_POOL_V4} peer-group CILIUM
  redistribute connected
  redistribute static
