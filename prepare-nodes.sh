@@ -112,7 +112,15 @@ if [[ "$CURRENT_CLI_VERSION" != "$CILIUM_CLI_VERSION" ]]; then
     | tar xzvf - -C /usr/local/bin
   chmod +x /usr/local/bin/cilium
 fi
-
+#
+#
+#
+##################################################################
+###### EDIT THIS PART TO CUSTOMIZE THE FRR BGP CONFIGURATION #####
+##################################################################
+#
+#
+#
 echo "🔧 Generating FRR config at $CONF_FILE..."
 
 cat > "$CONF_FILE" <<EOF
@@ -129,7 +137,7 @@ exit
 ipv6 route ${PEER_IPV6}/${PEER_MASK} eth0
 !
 router bgp ${LOCAL_ASN}
- bgp router-id $ROUTER_ID
+ bgp router-id $FRR_ROUTER_ID
  no bgp ebgp-requires-policy
  neighbor CILIUM peer-group
  neighbor CILIUM remote-as ${LOCAL_ASN}
@@ -138,6 +146,7 @@ router bgp ${LOCAL_ASN}
  neighbor ${PEER_IPV6} interface eth0
  bgp listen range 2001:db8:1::/64 peer-group CILIUM
  bgp listen range 192.168.2.0/24 peer-group CILIUM
+ bgp listen range ${LB_POOL_V4} peer-group CILIUM
  redistribute connected
  redistribute static
  !
