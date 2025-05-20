@@ -171,6 +171,9 @@ spec:
       service:
         addresses:
           - LoadBalancerIP
+      selector:             # <-- select Services to advertise
+        matchExpressions:
+          - { key: bgp, operator: In, values: [ ${CLUSTER_NAME}-pool ] }
 EOF
 
 echo "📄 Dump of $BGP_CONFIG_FILE:"

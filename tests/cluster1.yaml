@@ -24,8 +24,9 @@ metadata:
   name: lb-test
   labels:
     advertise: bgp
+    bgp: srv6-cluster-pool
   annotations:
-    lbipam.cilium.io/pool: "cluster1-pool"
+    lbipam.cilium.io/pool: srv6-cluster-pool
 spec:
   selector:
     app: test

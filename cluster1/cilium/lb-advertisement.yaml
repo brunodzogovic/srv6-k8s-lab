@@ -10,3 +10,6 @@ spec:
       service:
         addresses:
           - LoadBalancerIP
+      selector:             # <-- select Services to advertise
+        matchExpressions:
+          - { key: bgp, operator: In, values: [ srv6-cluster-pool ] }
