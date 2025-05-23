@@ -160,6 +160,7 @@ router bgp ${LOCAL_ASN}
  bgp listen range ${LB_POOL_V4} peer-group CILIUM
  redistribute connected
  redistribute static
+ redistribute local
  !
  address-family ipv4 unicast
   network ${ADVERTISED_IPV4}
