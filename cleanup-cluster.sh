@@ -91,6 +91,10 @@ if [[ -n "${NETWORK_NAME:-}" ]]; then
   fi
 fi
 
+# Clean dangling images
+echo "Removing dangling images"
+docker system prune -a --volumes -f
+
 # Ask if we want to stop FRR router
 echo
 read -p "🛑 Do you want to stop the FRR router? (y/n): " cleanup_frr
