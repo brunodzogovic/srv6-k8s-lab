@@ -39,6 +39,14 @@ if ! command -v helm &>/dev/null; then
   curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 fi
 
+# kubectl
+if ! command -v kubectl &>/dev/null; then
+  echo "Installing kubectl..."
+  curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+  rm kubectl
+fi
+
 # k3d
 if ! command -v k3d &>/dev/null; then
   echo "Installing k3d..."
