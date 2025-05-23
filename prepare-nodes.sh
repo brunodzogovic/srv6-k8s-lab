@@ -144,6 +144,7 @@ interface eth0
  ipv6 address ${LOCAL_IPV6}
 exit
 !
+ip route ${IPV4_NETWORK} ${IPV4_GATEWAY} 
 ipv6 route ${PEER_IPV6}/${PEER_MASK} eth0
 !
 router bgp ${LOCAL_ASN}
