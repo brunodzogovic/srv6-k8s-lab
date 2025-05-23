@@ -39,6 +39,12 @@ if ! command -v helm &>/dev/null; then
   curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 fi
 
+# k3d
+if ! command -v k3d &>/dev/null; then
+  echo "Installing k3d..."
+  curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+fi
+
 # Prompt for versions
 echo
 echo "🔢 Select Cilium version:"
@@ -112,15 +118,11 @@ if [[ "$CURRENT_CLI_VERSION" != "$CILIUM_CLI_VERSION" ]]; then
     | tar xzvf - -C /usr/local/bin
   chmod +x /usr/local/bin/cilium
 fi
-#
-#
-#
+
 ##################################################################
 ###### EDIT THIS PART TO CUSTOMIZE THE FRR BGP CONFIGURATION #####
 ##################################################################
-#
-#
-#
+
 echo "🔧 Generating FRR config at $CONF_FILE..."
 
 cat > "$CONF_FILE" <<EOF
@@ -137,7 +139,7 @@ exit
 ipv6 route ${PEER_IPV6}/${PEER_MASK} eth0
 !
 router bgp ${LOCAL_ASN}
- bgp router-id $FRR_ROUTER_ID
+ bgp router-id $ROUTER_ID
  no bgp ebgp-requires-policy
  neighbor CILIUM peer-group
  neighbor CILIUM remote-as ${LOCAL_ASN}

@@ -18,7 +18,7 @@ case "$cluster_choice" in
     start_script="$ROOT_DIR/cluster1/setup-cluster.sh"
     ;;
   2)
-    start_script="$ROOT_DIR/cluster2/setup-cluster2.sh"
+    start_script="$ROOT_DIR/cluster2/setup-cluster.sh"
     ;;
   *)
     echo "❌ Invalid selection. Please enter 1 or 2."

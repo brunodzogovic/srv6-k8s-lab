@@ -27,14 +27,18 @@ else
 fi
 
 echo "🚧 Creating Docker network with IPv6 enabled ..."
-docker network create \
-  --driver=bridge \
-  --subnet=$IPV4_NETWORK \
-  --gateway=$IPV4_GATEWAY \
-  --ipv6 \
-  --subnet=$IPV6_NETWORK \
-  --gateway=$IPV6_GATEWAY \
-  $NETWORK_NAME
+if ! docker network ls --format '{{.Name}}' | grep -q "^${NETWORK_NAME}$"; then
+  docker network create \
+    --driver=bridge \
+    --subnet=$IPV4_NETWORK \
+    --gateway=$IPV4_GATEWAY \
+    --ipv6 \
+    --subnet=$IPV6_NETWORK \
+    --gateway=$IPV6_GATEWAY \
+    $NETWORK_NAME
+else
+  echo "ℹ️ Docker network '$NETWORK_NAME' already exists. Skipping creation."
+fi
 
 echo "🚀 Creating k3d cluster '$CLUSTER_NAME' ..."
 k3d cluster create "$CLUSTER_NAME" \

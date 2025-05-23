@@ -1,116 +1,109 @@
 #!/bin/bash
 set -euo pipefail
 
-K3D_NET="k3d-net"
-CLUSTER_NAME=""
+# Detect active k3d cluster (by presence of kubeconfig)
+echo "🔍 Detecting running k3d cluster..."
 CLUSTER_DIR=""
 COMPOSE_FILE=""
-KUBECONFIG_FILE=""
+ENV_FILE=""
+NETWORK_NAME=""
 
-# 🔍 Detect running k3d cluster
-if command -v k3d &>/dev/null; then
-  echo "🔍 Detecting running k3d cluster..."
-  CLUSTER_NAME=$(k3d cluster list -o json 2>/dev/null | jq -r '.[0].name' || echo "")
-  if [[ -n "$CLUSTER_NAME" && "$CLUSTER_NAME" != "null" ]]; then
-    echo "📛 Detected active cluster: $CLUSTER_NAME"
-
-    for dir in ./cluster*/; do
-      [[ -f "$dir/cluster.env" ]] || continue
-      if grep -q "^CLUSTER_NAME=\"$CLUSTER_NAME\"$" "$dir/cluster.env"; then
+for dir in ./cluster*/; do
+  if [[ -f "$dir/cluster.env" ]]; then
+    source "$dir/cluster.env"
+    CLUSTER_NAME_FROM_ENV="${CLUSTER_NAME:-}"
+    if [[ -n "$CLUSTER_NAME_FROM_ENV" ]]; then
+      if k3d cluster list | grep -q "$CLUSTER_NAME_FROM_ENV"; then
         CLUSTER_DIR="$dir"
-        [[ -f "$CLUSTER_DIR/docker-compose.yml" ]] && COMPOSE_FILE="$CLUSTER_DIR/docker-compose.yml"
+        COMPOSE_FILE="$dir/docker-compose.yml"
+        ENV_FILE="$dir/cluster.env"
         break
       fi
-    done
-    KUBECONFIG_FILE="$HOME/.kube/k3d-${CLUSTER_NAME}.yaml"
-  else
-    CLUSTER_NAME=""
+    fi
   fi
-else
-  echo "⚠️  k3d not installed. Skipping cluster detection."
-fi
+done
 
-# 🔍 Detect running FRR router via docker-compose
-detect_frr() {
+# If no active cluster found, check if any cluster.env exists anyway
+if [[ -z "$CLUSTER_DIR" ]]; then
   for dir in ./cluster*/; do
-    [[ -f "$dir/docker-compose.yml" ]] || continue
-    if docker compose -f "$dir/docker-compose.yml" ps -q | grep -q .; then
+    if [[ -f "$dir/cluster.env" ]]; then
       CLUSTER_DIR="$dir"
       COMPOSE_FILE="$dir/docker-compose.yml"
-      return 0
+      ENV_FILE="$dir/cluster.env"
+      source "$ENV_FILE"
+      break
     fi
   done
-  return 1
-}
-
-# Exit only if neither k3d nor FRR is found
-if [[ -z "$CLUSTER_NAME" ]] && ! detect_frr; then
-  echo "✅ Nothing to clean: no running k3d cluster or FRR router detected."
-  exit 0
 fi
 
-# 🧹 Prompt for full cleanup
+if [[ -z "${CLUSTER_DIR:-}" || -z "${ENV_FILE:-}" ]]; then
+  echo "❌ No cluster.env or cluster directory found. Aborting."
+  exit 1
+fi
+
 echo
-echo "📍 Cluster directory: ${CLUSTER_DIR:-N/A}"
-echo "⚙️ Compose file: ${COMPOSE_FILE:-N/A}"
+echo "📍 Cluster directory: $CLUSTER_DIR"
+echo "⚙️ Compose file: $COMPOSE_FILE"
 
 read -p "⚠️  Do you want to proceed with cleanup? (y/n): " yn
 case $yn in
-  [yY] ) echo "🧹 Proceeding with cleanup...";;
-  [nN] ) echo "❌ Exiting."; exit 0;;
-  * ) echo "❌ Invalid response."; exit 1;;
+  [yY]) echo "🧹 Proceeding with cleanup...";;
+  *) echo "❌ Aborting."; exit 1;;
 esac
 
-# 🗑️ k3d Cluster Cleanup
-if [[ -n "$CLUSTER_NAME" ]]; then
-  echo "🔍 Attempting to uninstall Cilium..."
-  helm uninstall cilium -n kube-system 2>/dev/null || true
+# Uninstall Cilium if still installed
+helm uninstall cilium -n kube-system 2>/dev/null || true
 
-  echo "🧽 Cleaning up Cilium BGP CRDs (ignore if missing)..."
-  kubectl delete ciliumloadbalancerippool --all --ignore-not-found || true
-  kubectl delete ciliumbgpadvertisement --all --ignore-not-found || true
-  kubectl delete ciliumbgpclusterconfig --all --ignore-not-found || true
-  kubectl delete ciliumbgppeerconfig --all --ignore-not-found || true
+# Delete Cilium BGP resources
+kubectl delete ciliumloadbalancerippool --all --ignore-not-found || true
+kubectl delete ciliumbgpadvertisement --all --ignore-not-found || true
+kubectl delete ciliumbgpclusterconfig --all --ignore-not-found || true
+kubectl delete ciliumbgppeerconfig --all --ignore-not-found || true
 
-  echo "🗑️ Deleting k3d cluster..."
-  k3d cluster delete "$CLUSTER_NAME" || true
-
-  if [[ -f "$KUBECONFIG_FILE" ]]; then
-    echo "🧽 Removing kubeconfig file: $KUBECONFIG_FILE"
-    rm -f "$KUBECONFIG_FILE"
-  fi
+# Delete k3d cluster
+if k3d cluster list | grep -q "$CLUSTER_NAME"; then
+  echo "🗑️ Deleting k3d cluster '$CLUSTER_NAME'..."
+  k3d cluster delete "$CLUSTER_NAME"
 else
   echo "ℹ️ No k3d cluster to remove."
 fi
 
-# 🔌 Docker network cleanup
-if docker network ls --format '{{.Name}}' | grep -q "^${K3D_NET}$"; then
-  echo "📦 Removing containers attached to Docker network: $K3D_NET"
-  CONTAINERS=$(docker network inspect "$K3D_NET" -f '{{range .Containers}}{{.Name}} {{end}}')
-  if [[ -n "$CONTAINERS" ]]; then
-    docker rm -f $CONTAINERS || true
-  fi
-  echo "🧯 Removing Docker network '$K3D_NET'..."
-  docker network rm "$K3D_NET" || true
-else
-  echo "ℹ️ Docker network '$K3D_NET' not found."
+# Remove kubeconfig
+KUBECONFIG_FILE="$HOME/.kube/k3d-${CLUSTER_NAME}.yaml"
+if [[ -f "$KUBECONFIG_FILE" ]]; then
+  echo "🧽 Removing kubeconfig file: $KUBECONFIG_FILE"
+  rm -f "$KUBECONFIG_FILE"
 fi
 
-# 🛑 FRR router cleanup (optional)
-if [[ -n "$COMPOSE_FILE" ]]; then
-  echo
-  read -p "🛑 Do you want to stop the FRR router? (y/n): " cleanup_frr
-  if [[ "$cleanup_frr" =~ ^[yY]$ ]]; then
-    echo "📦 Stopping FRR router using: $COMPOSE_FILE"
-    docker compose -f "$COMPOSE_FILE" down || true
-    echo "✅ FRR router stopped."
+# Remove Docker network
+if [[ -n "${NETWORK_NAME:-}" ]]; then
+  echo "🔌 Checking for Docker network '$NETWORK_NAME'..."
+  if docker network inspect "$NETWORK_NAME" &>/dev/null; then
+    echo "📦 Stopping containers on '$NETWORK_NAME'..."
+    CONTAINERS=$(docker network inspect "$NETWORK_NAME" -f '{{range .Containers}}{{.Name}} {{end}}')
+    if [[ -n "$CONTAINERS" ]]; then
+      docker rm -f $CONTAINERS || true
+    fi
+    echo "🧯 Removing Docker network '$NETWORK_NAME'..."
+    docker network rm "$NETWORK_NAME" || true
   else
-    echo "ℹ️ Skipping FRR cleanup."
+    echo "ℹ️ Docker network '$NETWORK_NAME' not found."
+  fi
+fi
+
+# Ask if we want to stop FRR router
+echo
+read -p "🛑 Do you want to stop the FRR router? (y/n): " cleanup_frr
+if [[ "$cleanup_frr" =~ ^[yY]$ ]]; then
+  if [[ -f "$COMPOSE_FILE" ]]; then
+    echo "📦 Stopping FRR router using docker-compose..."
+    docker compose -f "$COMPOSE_FILE" down || true
+  else
+    echo "⚠️  No compose file found to stop FRR."
   fi
 else
-  echo "ℹ️ No active FRR router found."
+  echo "ℹ️ Skipping FRR cleanup."
 fi
 
 echo
 echo "✅ Cleanup complete."
-
