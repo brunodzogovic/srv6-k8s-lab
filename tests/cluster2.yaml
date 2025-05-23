@@ -23,19 +23,19 @@ kind: Service
 metadata:
   name: ipv6-lb
   labels:
+    bgp: srv6-cluster-2-pool
     app: ipv6-test
     advertise: bgp
-    pool: cluster2-pool
+    pool: srv6-cluster-2-pool
   annotations:
-    "lbipam.cilium.io/ips": "2001:db8:2:fef::10"
+    lbipam.cilium.io/pool: srv6-cluster-2-pool
 spec:
   selector:
     app: ipv6-test
   type: LoadBalancer
-  ipFamilyPolicy: PreferDualStack
+  ipFamilyPolicy: SingleStack
   ipFamilies:
     - IPv4
-    - IPv6
   ports:
     - port: 80
       targetPort: 80

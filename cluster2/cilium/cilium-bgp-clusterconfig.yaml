@@ -1,17 +1,17 @@
 apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPClusterConfig
 metadata:
-  name: cluster2-bgp-config
+  name: srv6-cluster-2-bgp-config
 spec:
   nodeSelector:
     matchLabels:
-      kubernetes.io/os: linux
+      kubernetes.io/hostname: k3d-srv6-cluster-2-server-0
   bgpInstances:
   - name: instance-65002
     localASN: 65002
     peers:
-    - name: peer-v6
+    - name: peer-v4
       peerASN: 65002
-      peerAddress: 2001:db8:2::1
+      peerAddress: 192.168.2.4
       peerConfigRef:
         name: cilium-peer

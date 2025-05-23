@@ -99,11 +99,25 @@ docker system prune -a --volumes -f
 echo
 read -p "🛑 Do you want to stop the FRR router? (y/n): " cleanup_frr
 if [[ "$cleanup_frr" =~ ^[yY]$ ]]; then
-  if [[ -f "$COMPOSE_FILE" ]]; then
-    echo "📦 Stopping FRR router using docker-compose..."
-    docker compose -f "$COMPOSE_FILE" down || true
+  # Try to detect which FRR container is running
+  FRR_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E '^frr[12]$' | head -n1 || true)
+  if [[ -n "$FRR_CONTAINER" ]]; then
+    echo "🔍 Found running FRR container: $FRR_CONTAINER"
+    if [[ "$FRR_CONTAINER" == "frr1" ]]; then
+      COMPOSE_FILE="./cluster1/docker-compose.yml"
+      PROJECT_NAME="cluster1"
+    elif [[ "$FRR_CONTAINER" == "frr2" ]]; then
+      COMPOSE_FILE="./cluster2/docker-compose.yml"
+      PROJECT_NAME="cluster2"
+    else
+      echo "⚠️ Unknown FRR container '$FRR_CONTAINER'. Skipping cleanup."
+      exit 1
+    fi
+
+    echo "📦 Stopping $FRR_CONTAINER using docker-compose project: $PROJECT_NAME"
+    docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" down --remove-orphans || true
   else
-    echo "⚠️  No compose file found to stop FRR."
+    echo "ℹ️ No running FRR container found."
   fi
 else
   echo "ℹ️ Skipping FRR cleanup."
