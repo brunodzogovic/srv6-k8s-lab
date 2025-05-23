@@ -163,6 +163,7 @@ router bgp ${LOCAL_ASN}
  !
  address-family ipv4 unicast
   network ${ADVERTISED_IPV4}
+  network ${IPV4_NETWORK}
   network ${LB_POOL_V4}
   neighbor ${PEER_IPV4} activate
  exit-address-family
