@@ -143,8 +143,7 @@ interface eth0
  ip address ${LOCAL_IPV4}/24
  ipv6 address ${LOCAL_IPV6}
 exit
-!
-ip route ${IPV4_NETWORK} ${IPV4_GATEWAY} 
+! 
 ipv6 route ${PEER_IPV6}/${PEER_MASK} eth0
 !
 router bgp ${LOCAL_ASN}
